@@ -8,7 +8,12 @@ let headstart;
 let drag;
 let halt;
 let meteors;
-let nOff=0;
+let nOff;
+let fireOffset;
+let health;
+let dec;
+
+let fr=[0,0];
 
 function preload(){
 	//theme song
@@ -26,6 +31,7 @@ function preload(){
 }
 
 function setup(){
+
     //game resolution
     res = 20 * window.devicePixelRatio;
 
@@ -63,6 +69,8 @@ function setup(){
         wavesp : 1,             //wave's speed
         numMeteors : 1,         //number of meteors
         meteorSpeed : width / 120,  //speed of all meteors
+        slant : -35,
+        meteorSize: 5,
     };
 
     waveOffset=0;
@@ -101,6 +109,12 @@ function setup(){
     meteors = [];
     for (let i = 0; i < prop.numMeteors; i++)
         addMeteor(i);
+
+    nOff = 0;
+    fireOffset = 0;
+
+    health = 100;
+    dec = 100;
 }
 
 function draw() {
@@ -114,8 +128,8 @@ function draw() {
         };
         //Mouse Control
         if (drag != 0) {
-            move = mouseX - drag;
-            jet.x = constrain(move, boundary.left, boundary.right);
+            move = constrain(mouseX - drag, boundary.left, boundary.right);
+            jet.x = lerp(jet.x, move, 0.2);
         }
         //Keyboard Control
         if (keyIsDown(LEFT_ARROW))
@@ -128,24 +142,32 @@ function draw() {
     background(222, 235, 247);
 
     //METEORS
-    if (/*screen == 'PLAY' && */!headstart){
+    if (/*screen == 'PLAY' || screen == 'OVER' && */!headstart){
         displayMeteor();
         updateMeteor();
     }
 
-    //JET
+    //JET AND WAVE UPDATION
+    updateWave();
     slideJet();
+
+    //CRASH
+    crashCheck();
+
+    //JET
     displayJet();
 
-    //WAVE CREATION
+    //WAVE
     createWave();
-    updateWave();
 
     //PLAY/PAUSE BUTTON
     playpause();
 
     //SCORE
-    score();    
+    showScore();
+
+    if(!headstart)
+        showHealthBar();
 }
 
 function mouseDragged() {
@@ -160,10 +182,13 @@ function mouseReleased() {
 
 function mousePressed() {
     cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
-    if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == "PLAY") {
+    if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 'PLAY') {
         screen = "PAUSE";
         noLoop();
-    } else if (mouseX > (width - halt.play.s)/2 && mouseX < (width + halt.play.s)/2 && mouseY > (height - halt.play.s)/2 && mouseY < (height + halt.play.s)/2 && screen == "PAUSE") {
+    }/* else if (mouseX > (width - halt.play.s)/2 && mouseX < (width + halt.play.s)/2 && mouseY > (height - halt.play.s)/2 && mouseY < (height + halt.play.s)/2 && screen == 'PAUSE') {
+        screen = "PLAY";
+        loop();
+    } */else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 'PAUSE'){
         screen = "PLAY";
         loop();
     }
@@ -180,11 +205,16 @@ function keyPressed() {
             loop();
         }
     }
+
+    //FOR DEBUGGING
+    if (key >= '1' && key <= '9')
+        frameRate(key.valueOf() * 10);
+    return false;
 }
 
 function slideJet() {
     if (headstart){
-        jet.x = jet.x + res / 10;
+        jet.x = jet.x + res / 5;
         wp = abs(floor(jet.x / res));
         jet.y = waves[wp] - prop.tide / 2;
         headstart = !(jet.x >= width / 2);
@@ -204,18 +234,65 @@ function slideJet() {
 
 function displayJet() {
     push();
-    noStroke();
     translate(jet.x, jet.y);
     let inc = floor(jet.width / res / 2) - 1;
     let dy = waves[wp + inc] - waves[wp - inc];
     let dx = res * inc * 2;
     rotate(atan(dy/dx));
     image(rider, -jet.width / 2, -jet.height / 2, jet.width, jet.height); //jet
+
+    /*
+    noFill().strokeWeight(5).stroke(255,0,0)
+    translate(-jet.width/2,-jet.height/2);
+    triangle(0, jet.height, jet.width, jet.height * 5.75 / 9, jet.width * 4.74 / 15, 0);//DELETE THIS
+    */
+
     pop();
 }
 
+function crashCheck() {
+    for (i = 0; i < prop.numMeteors; i++) {
+
+        if (meteors[i].c)
+            continue;
+        let m = meteors[i];
+        if ((m.y + m.r) > (jet.y - jet.height / 2) && (m.y - m.r) < (jet.y + jet.height / 2) && abs(m.x - jet.x) < (m.r + jet.width / 2)) {
+            
+            x1 = 0;
+            y1 = jet.height;
+            x2 = jet.width;
+            y2 = jet.height * 5.75 / 9;
+            x3 = jet.width * 4.74 / 15;
+            y3 = 0;
+
+            //slopes
+            m1 = (y2 - y3) / (x2 - x3); //slope1
+            m2 = (y3 - y1) / (x3 - x1); //slope2
+
+            //y-intercepts
+            c1 = (y3 + jet.y - jet.height / 2) - m1 * (x3 + jet.x - jet.width / 2); //y-intercept1
+            c2 = (y1 + jet.y - jet.height / 2) - m2 * (x1 + jet.x - jet.width / 2); //y-intercept2
+
+            //perpendicular distance
+            d1 = abs(-m1 * m.x + m.y - c1) / sqrt((m1 * m1) + 1);
+            d2 = abs(-m2 * m.x + m.y - c2) / sqrt((m2 * m2) + 1);
+
+            //If crashed i.e. crash boundary crossed
+            if ((m.x <= (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d2 < m.r / 2) || (m.x > (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d1 < m.r / 2)) {
+                //tintColor = 0;
+                dec = constrain(dec - m.r, 0, 100);
+                m.c = true;
+            }/* else if (m.x > (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d1 < m.r / 2) {
+                //tintColor = 0;
+                dec = constrain(dec - m.r, 0, 100);
+                m.c = true;
+            }*/
+        }
+    }
+}
+
 function addMeteor(index) {
-    rad=random(width / 50, width / 30);
+    rad=random(width * prop.meteorSize / 250, width * prop.meteorSize / 150);
     meteors.splice(index, 0, {
         x: random(height + rad / 2, 2 * width - rad / 2),
         y: random(-(height - rad / 2), -rad / 2),
@@ -227,15 +304,26 @@ function addMeteor(index) {
 function displayMeteor(){
     for(m of meteors){
         push();
-        strokeWeight(res/5);
-        stroke(255, (nOff % 100) + 75, 0);
+        translate(m.x, m.y);
+        strokeWeight(res*prop.meteorSize/25);
+        inc = res * prop.meteorSize / 35;
+        for(i = -m.r / sqrt(2); i <= m.r / sqrt(2) && m.y < prop.elev; i += inc){
+            if (random() > 0.4) //percentage of yellow fire lines appearing
+                stroke(255, 175, 0);    //orange color
+            else
+                stroke(255, 75, 0);     //yellow color
+            len = m.r * 2 + m.r * 2 * noise(fireOffset);
+            line(i, i, i + len * cos(90 + prop.slant), i - len * sin(90 + prop.slant));
+            fireOffset++;
+        }
         beginShape();
-        fill(139, 69, 19);
+        stroke(255, (nOff % 100) + 75, 0);
+        fill(139, 69, 19);//brown color
         for(i = 0; i < 360; i += res){
-            cons = (m.r + m.r * noise(nOff) / 4);
-            vx=cons*cos(i);
-            vy=cons*sin(i);
-            vertex(m.x+vx, m.y+vy);
+            cons = m.r * (1 + noise(nOff) / 4); //Rock Disfiguration
+            vx = cons * cos(i);
+            vy = cons * sin(i);
+            vertex(vx, vy);
             nOff++;
         }
         endShape(CLOSE);
@@ -253,8 +341,8 @@ function updateMeteor(){
         m.x -= prop.meteorSpeed;
         m.y += prop.meteorSpeed;
 
-        //create new ones when a meteor drowns
-        if((m.y - m.r) > (prop.elev + prop.tide*1.5) || (m.x + m.r) < 0){
+        //create new ones when a meteor drowns or goes out of the visible area
+        if((m.y - m.r) > (prop.elev + prop.tide * 1.5) || (m.x + m.r) < 0){
             meteors.splice(i, 1);
             addMeteor(i);
         }
@@ -271,9 +359,8 @@ function createWave() {
     //displaying surface waves pattern
     beginShape();
     vertex(0, prop.elev);
-    for(let i = 0; i < waves.length; i++) {
+    for(let i = 0; i < waves.length; i++)
     	vertex(i * res, waves[i]);
-    }
     vertex(width, prop.elev);
     endShape(CLOSE);
 
@@ -289,7 +376,7 @@ function createWave() {
 
 function updateWave(){
     //Wave Shifting
-    for (let i = 0; i <= prop.wavesp && screen == 'PLAY'; i += res) {
+    for (let i = 0; i <= prop.wavesp && (screen == 'PLAY' || screen == 'OVER'); i += res) {
         //wave particle addition at the back
         waves.push(prop.elev - noise(waveOffset) * prop.tide);
         //wave particle removal from the front
@@ -318,7 +405,7 @@ function playpause() {
     }
 }
 
-function score() {
+function showScore() {
     fontSize = height * 5 / 76;
     //wd = fontSize / 2.20;
     posY = height * 18 / 20;
@@ -330,4 +417,31 @@ function score() {
     //fr = frameCount - del;
     text('Score : ' + round(frameCount / 60), posX, posY);
     pop();
+}
+
+function showHealthBar() {
+    stroke(0);
+    fill(255);
+    h = height/30;
+    w = width/3;
+    rect(h, h, w, h);
+    health = lerp(health, dec, 0.2);
+    fill((100 - health)*255/100, health*255/100, 0);
+    rect(h, h, map(health, 0, 100, 0, w), h);
+    fill(255).textSize(h).strokeWeight(3);
+
+
+    if(fr[1]++ == 10){
+        fr[0]=int(frameRate());
+        fr[1]=0;
+    }
+    text(/*"HEALTH"*/"frameRate : "+fr[0], h + w / 2, h + height / 100);
+
+
+    if(health <= 0.1) {
+        screen = 'OVER';
+        noLoop();
+        //DISPLAY OVER ANIMATION OF JET SINKING
+    }
+    strokeWeight(1);
 }
