@@ -12,12 +12,15 @@ let nOff;
 let fireOffset;
 let health;
 let dec;
+let damage; //greater its value is, less is the damage (range: 0 - 255)
+let splash;
 
 let fr=[0,0];
 
 function preload(){
 	//theme song
-    song = loadSound('./sound/TheOcean.mp3');
+    //song = loadSound('./sound/TheOcean.mp3');
+    song = loadSound('./sound/LifeIsMusic.mp3');
     //Jet (main object)
     rider = loadImage('./images/jet.png');
     //sound On image
@@ -74,13 +77,14 @@ function setup(){
     };
 
     waveOffset=0;
-    //waves' ripples initialization
+    //wave ripples initialization
     waves=[];
+    splash={};
     for (let i = 0; i <= width; i += res) {
+        splash[i/res]=0;
         waves.push(prop.elev - noise(waveOffset) * prop.tide);
         waveOffset += res / 200;
     }
-
 
     jet = {
         width: 15 * (width / 60), //15:9
@@ -115,6 +119,8 @@ function setup(){
 
     health = 100;
     dec = 100;
+
+    damage = 255 ;
 }
 
 function draw() {
@@ -185,10 +191,7 @@ function mousePressed() {
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 'PLAY') {
         screen = "PAUSE";
         noLoop();
-    }/* else if (mouseX > (width - halt.play.s)/2 && mouseX < (width + halt.play.s)/2 && mouseY > (height - halt.play.s)/2 && mouseY < (height + halt.play.s)/2 && screen == 'PAUSE') {
-        screen = "PLAY";
-        loop();
-    } */else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 'PAUSE'){
+    } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 'PAUSE'){
         screen = "PLAY";
         loop();
     }
@@ -239,14 +242,11 @@ function displayJet() {
     let dy = waves[wp + inc] - waves[wp - inc];
     let dx = res * inc * 2;
     rotate(atan(dy/dx));
+    if (damage <= 250) {
+        damage = lerp(damage, 255, 0.2);
+        tint(255, damage, damage);
+    }
     image(rider, -jet.width / 2, -jet.height / 2, jet.width, jet.height); //jet
-
-    /*
-    noFill().strokeWeight(5).stroke(255,0,0)
-    translate(-jet.width/2,-jet.height/2);
-    triangle(0, jet.height, jet.width, jet.height * 5.75 / 9, jet.width * 4.74 / 15, 0);//DELETE THIS
-    */
-
     pop();
 }
 
@@ -270,23 +270,19 @@ function crashCheck() {
             m2 = (y3 - y1) / (x3 - x1); //slope2
 
             //y-intercepts
-            c1 = (y3 + jet.y - jet.height / 2) - m1 * (x3 + jet.x - jet.width / 2); //y-intercept1
-            c2 = (y1 + jet.y - jet.height / 2) - m2 * (x1 + jet.x - jet.width / 2); //y-intercept2
+            c1 = (y3 + jet.y - y1 / 2) - m1 * (x3 + jet.x - x2 / 2); //y-intercept1
+            c2 = (y1 + jet.y - y1 / 2) - m2 * (x1 + jet.x - x2 / 2); //y-intercept2
 
             //perpendicular distance
             d1 = abs(-m1 * m.x + m.y - c1) / sqrt((m1 * m1) + 1);
             d2 = abs(-m2 * m.x + m.y - c2) / sqrt((m2 * m2) + 1);
 
             //If crashed i.e. crash boundary crossed
-            if ((m.x <= (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d2 < m.r / 2) || (m.x > (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d1 < m.r / 2)) {
-                //tintColor = 0;
+            if ((m.x <= (jet.x - x2 / 2 + x3) && d2 < m.r / 2) || (m.x > (jet.x - x2 / 2 + x3) && d1 < m.r / 2)) {
+                damage = 0;
                 dec = constrain(dec - m.r, 0, 100);
                 m.c = true;
-            }/* else if (m.x > (jet.x - jet.width / 2 + jet.width * 4.74 / 15) && d1 < m.r / 2) {
-                //tintColor = 0;
-                dec = constrain(dec - m.r, 0, 100);
-                m.c = true;
-            }*/
+            }
         }
     }
 }
@@ -340,6 +336,12 @@ function updateMeteor(){
         //Shifting Meteors
         m.x -= prop.meteorSpeed;
         m.y += prop.meteorSpeed;
+
+        if(m.y > prop.elev - prop.tide){
+            for(let i=floor((m.x-m.r)/res);i<=floor((m.x+m.r)/res);i++){
+                //splash[round((m.x-m.r)/res)]+=
+            }
+        }
 
         //create new ones when a meteor drowns or goes out of the visible area
         if((m.y - m.r) > (prop.elev + prop.tide * 1.5) || (m.x + m.r) < 0){
