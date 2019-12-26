@@ -13,7 +13,6 @@ let fireOffset;
 let health;
 let dec;
 let damage; //greater its value is, less is the damage (range: 0 - 255)
-let splash;
 
 let fr=[0,0];
 
@@ -70,7 +69,7 @@ function setup(){
         elev : height * 3 / 4,  //waves' height in general
         tide : height / 12,     //tide's height
         wavesp : 1,             //wave's speed
-        numMeteors : 1,         //number of meteors
+        numMeteors : 3,         //number of meteors
         meteorSpeed : width / 120,  //speed of all meteors
         slant : -35,
         meteorSize: 5,
@@ -79,9 +78,7 @@ function setup(){
     waveOffset=0;
     //wave ripples initialization
     waves=[];
-    splash={};
     for (let i = 0; i <= width; i += res) {
-        splash[i/res]=0;
         waves.push(prop.elev - noise(waveOffset) * prop.tide);
         waveOffset += res / 200;
     }
@@ -89,7 +86,7 @@ function setup(){
     jet = {
         width: 15 * (width / 60), //15:9
         height: 9 * (width / 60), //15:9
-        speed: width * 8 / 600,
+        speed: width / 60,
     };
     jet.x = - jet.width / 2;
     wp = abs(floor(jet.x / res));   //wave particle that's elevating the jet
@@ -232,6 +229,10 @@ function slideJet() {
         if (screen != 'PLAY')
             amt = 0;
         jet.y = lerp(jet.y, newY, amt);
+
+        //FOR DEBUGGING
+        if(isNaN(jet.y) || isNaN(jet.x))
+            noLoop();
     }
 }
 
@@ -241,7 +242,7 @@ function displayJet() {
     let inc = floor(jet.width / res / 2) - 1;
     let dy = waves[wp + inc] - waves[wp - inc];
     let dx = res * inc * 2;
-    rotate(atan(dy/dx));
+    rotate(atan(dy/dx));//when angle is >=45 degrees forward then stay in that position for a while
     if (damage <= 250) {
         damage = lerp(damage, 255, 0.2);
         tint(255, damage, damage);
@@ -294,6 +295,7 @@ function addMeteor(index) {
         y: random(-(height - rad / 2), -rad / 2),
         r: floor(rad),
         c: false,
+        d: false,
     });
 }
 
@@ -316,13 +318,14 @@ function displayMeteor(){
         stroke(255, (nOff % 100) + 75, 0);
         fill(139, 69, 19);//brown color
         for(i = 0; i < 360; i += res){
-            cons = m.r * (1 + noise(nOff) / 4); //Rock Disfiguration
+            cons = m.r * (1 + noise(nOff) / 2); //Rock Disfiguration
             vx = cons * cos(i);
             vy = cons * sin(i);
             vertex(vx, vy);
             nOff++;
         }
         endShape(CLOSE);
+        //ellipse(0,0,m.r*2);
         pop();
     }
 }
@@ -331,16 +334,23 @@ function updateMeteor(){
     if (meteors.length < prop.numMeteors)
         addMeteor(0);
 
-    for (i = 0; i < prop.numMeteors; i++){
+    for (let i = 0; i < prop.numMeteors; i++){
         m=meteors[i];
         //Shifting Meteors
         m.x -= prop.meteorSpeed;
         m.y += prop.meteorSpeed;
 
-        if(m.y > prop.elev - prop.tide){
-            for(let i=floor((m.x-m.r)/res);i<=floor((m.x+m.r)/res);i++){
-                //splash[round((m.x-m.r)/res)]+=
+        if(m.y > prop.elev && !m.d){
+            waveHeight = m.r * 1.25;
+            low = floor((m.x - waveHeight * 4)/res); //floor((m.x - m.r * 4)/res);
+            upp = ceil((m.x + waveHeight * 3)/res);  //floor((m.x - m.r * 4)/res);
+            low = (low < 0)?0:low;
+            upp = (upp >= waves.length)?waves.length-1:upp;
+            for(let j = low; j <= upp; j++){
+                //elevating/rising/creating waves
+                waves[j] -= waveHeight * (1 - cos((j - low)*360/(upp - low)));
             }
+            m.d = true;
         }
 
         //create new ones when a meteor drowns or goes out of the visible area
@@ -361,18 +371,19 @@ function createWave() {
     //displaying surface waves pattern
     beginShape();
     vertex(0, prop.elev);
-    for(let i = 0; i < waves.length; i++)
-    	vertex(i * res, waves[i]);
+    for(let i = 0; i < waves.length; i++){
+        // if(isNaN(waves[i]))
+    	   // waves.splice(i,1);
+        vertex(i * res, waves[i]);
+    }
     vertex(width, prop.elev);
     endShape(CLOSE);
 
     //Ocean Floor
-    let inc = res / 2;
-    for (let i = prop.elev; i <= height; i += inc) {
+    for (let i = prop.elev; i <= height; i += res / 2) {
         amt = map(i, prop.elev, height, 0, 1);
-        lc = lerpColor(surf, flor, amt);
-        fill(lc);
-        rect(0, i, width, inc);
+        fill(lerpColor(surf, flor, amt));
+        rect(0, i, width, res/2);
     }
 }
 
