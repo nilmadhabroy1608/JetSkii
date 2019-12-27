@@ -12,9 +12,10 @@ let nOff;
 let fireOffset;
 let health;
 let dec;
+let tossAngle;
 let damage; //greater its value is, less is the damage (range: 0 - 255)
-
-let fr=[0,0];
+let curLevel;
+let score;
 
 function preload(){
 	//theme song
@@ -69,7 +70,7 @@ function setup(){
         elev : height * 3 / 4,  //waves' height in general
         tide : height / 12,     //tide's height
         wavesp : 1,             //wave's speed
-        numMeteors : 3,         //number of meteors
+        numMeteors : 1,         //number of meteors
         meteorSpeed : width / 120,  //speed of all meteors
         slant : -35,
         meteorSize: 5,
@@ -82,6 +83,9 @@ function setup(){
         waves.push(prop.elev - noise(waveOffset) * prop.tide);
         waveOffset += res / 200;
     }
+
+    curLevel = 0;
+    score = 1;
 
     jet = {
         width: 15 * (width / 60), //15:9
@@ -118,6 +122,8 @@ function setup(){
     dec = 100;
 
     damage = 255 ;
+
+    tossAngle = 0;
 }
 
 function draw() {
@@ -139,26 +145,31 @@ function draw() {
             jet.x = constrain(jet.x - move, boundary.left, boundary.right);
         if (keyIsDown(RIGHT_ARROW))
             jet.x = constrain(jet.x + move, boundary.left, boundary.right);
+    } else if(screen == 'OVER' && jet.x > -jet.width/2){
+        jet.x -= res / 1.5;
+        jet.y = lerp(jet.y, height, 0.05);
     }
     
 	//Background Sky
     background(222, 235, 247);
 
     //METEORS
-    if (/*screen == 'PLAY' || screen == 'OVER' && */!headstart){
+    if ((screen == 'PLAY' || screen == 'OVER') && !headstart){
         displayMeteor();
         updateMeteor();
     }
 
-    //JET AND WAVE UPDATION
+    //WAVE UPDATION
     updateWave();
-    slideJet();
+
+    //JET UPDATION AND DISPLAY
+    if((screen == 'OVER' && jet.x >= -jet.width/2) || screen == 'PLAY' || screen == 'PAUSE'){
+        slideJet();
+        displayJet();
+    }
 
     //CRASH
     crashCheck();
-
-    //JET
-    displayJet();
 
     //WAVE
     createWave();
@@ -221,14 +232,21 @@ function slideJet() {
     } else {
         wp=floor(jet.x / res);
 
+        if(screen == 'PLAY'){
         //for smooth bounce
-        newY = waves[wp] - prop.tide/2;
-        let amt = 0.99;
-        if (jet.y < newY)
-            amt = 0.1;
-        if (screen != 'PLAY')
-            amt = 0;
-        jet.y = lerp(jet.y, newY, amt);
+            newY = waves[wp] - prop.tide/2;
+            let amt = 0.99;
+            if (jet.y < newY)
+                amt = 0.1;
+            if (screen != 'PLAY')
+                amt = 0;
+            jet.y = lerp(jet.y, newY, amt);
+
+            // if(jet.y < newY)
+            //     jet.y += (newY - jet.y) * 0.2;
+
+            //jet.y = newY;
+        }
 
         //FOR DEBUGGING
         if(isNaN(jet.y) || isNaN(jet.x))
@@ -239,10 +257,23 @@ function slideJet() {
 function displayJet() {
     push();
     translate(jet.x, jet.y);
-    let inc = floor(jet.width / res / 2) - 1;
-    let dy = waves[wp + inc] - waves[wp - inc];
-    let dx = res * inc * 2;
-    rotate(atan(dy/dx));//when angle is >=45 degrees forward then stay in that position for a while
+    if(screen == 'PLAY' || screen == 'PAUSE'){
+        let inc = floor(jet.width / res / 2) - 1;
+        let dy = waves[wp + inc] - waves[wp - inc];
+        let dx = res * inc * 2;
+        let angle = atan(dy/dx);
+        /*if(tossAngle == 0){
+            angle = atan(dy/dx);//when angle is >=45 degrees forward then stay in that position for a while
+        }
+        if (angle < -10){
+            rotate(angle);
+            tossAngle = angle;
+        }*/
+        rotate(angle);
+    } else if (screen == 'OVER'){
+        rotate(tossAngle);
+        tossAngle -= 10;
+    }
     if (damage <= 250) {
         damage = lerp(damage, 255, 0.2);
         tint(255, damage, damage);
@@ -252,8 +283,7 @@ function displayJet() {
 }
 
 function crashCheck() {
-    for (i = 0; i < prop.numMeteors; i++) {
-
+    for (let i = 0; i < prop.numMeteors; i++) {
         if (meteors[i].c)
             continue;
         let m = meteors[i];
@@ -305,7 +335,7 @@ function displayMeteor(){
         translate(m.x, m.y);
         strokeWeight(res*prop.meteorSize/25);
         inc = res * prop.meteorSize / 35;
-        for(i = -m.r / sqrt(2); i <= m.r / sqrt(2) && m.y < prop.elev; i += inc){
+        for(let i = -m.r / sqrt(2); i <= m.r / sqrt(2) && m.y < prop.elev; i += inc){
             if (random() > 0.4) //percentage of yellow fire lines appearing
                 stroke(255, 175, 0);    //orange color
             else
@@ -317,7 +347,7 @@ function displayMeteor(){
         beginShape();
         stroke(255, (nOff % 100) + 75, 0);
         fill(139, 69, 19);//brown color
-        for(i = 0; i < 360; i += res){
+        for(let i = 0; i < 360; i += res){
             cons = m.r * (1 + noise(nOff) / 2); //Rock Disfiguration
             vx = cons * cos(i);
             vy = cons * sin(i);
@@ -340,15 +370,15 @@ function updateMeteor(){
         m.x -= prop.meteorSpeed;
         m.y += prop.meteorSpeed;
 
-        if(m.y > prop.elev && !m.d){
+        if(m.y > prop.elev && !m.d && m.x > 0 && m.x < width){
             waveHeight = m.r * 1.25;
-            low = floor((m.x - waveHeight * 4)/res); //floor((m.x - m.r * 4)/res);
-            upp = ceil((m.x + waveHeight * 3)/res);  //floor((m.x - m.r * 4)/res);
+            low = floor((m.x - waveHeight * 5)/res); //floor((m.x - m.r * 4)/res);
+            upp = ceil((m.x + waveHeight * 4)/res);  //floor((m.x - m.r * 4)/res);
             low = (low < 0)?0:low;
             upp = (upp >= waves.length)?waves.length-1:upp;
             for(let j = low; j <= upp; j++){
                 //elevating/rising/creating waves
-                waves[j] -= waveHeight * (1 - cos((j - low)*360/(upp - low)));
+                waves[j] -= waveHeight * (1 - cos(map(j, low, upp, 0, 360)));
             }
             m.d = true;
         }
@@ -390,9 +420,9 @@ function createWave() {
 function updateWave(){
     //Wave Shifting
     for (let i = 0; i <= prop.wavesp && (screen == 'PLAY' || screen == 'OVER'); i += res) {
-        //wave particle addition at the back
+        //wave particle addition at the back/right
         waves.push(prop.elev - noise(waveOffset) * prop.tide);
-        //wave particle removal from the front
+        //wave particle removal from the front/left
         waves.shift();
         waveOffset += res / 200;
     }
@@ -428,7 +458,10 @@ function showScore() {
     textAlign(LEFT, CENTER);
     fill(255, 180, 0).textSize(fontSize);
     //fr = frameCount - del;
-    text('Score : ' + round(frameCount / 60), posX, posY);
+    score = round(frameCount / 60);
+    text('Score : ' + score, posX, posY);
+    if(score != 0 && score % 10 === 0 && floor(score/10) > curLevel-1)
+        levelChange(++curLevel);
     pop();
 }
 
@@ -442,19 +475,31 @@ function showHealthBar() {
     fill((100 - health)*255/100, health*255/100, 0);
     rect(h, h, map(health, 0, 100, 0, w), h);
     fill(255).textSize(h).strokeWeight(3);
-
-
-    if(fr[1]++ == 10){
-        fr[0]=int(frameRate());
-        fr[1]=0;
-    }
-    text(/*"HEALTH"*/"frameRate : "+fr[0], h + w / 2, h + height / 100);
-
-
-    if(health <= 0.1) {
+    text("HEALTH", h + w / 2, h + height / 100);
+    if(health <= 0.5 && screen != 'OVER') {
         screen = 'OVER';
-        noLoop();
-        //DISPLAY OVER ANIMATION OF JET SINKING
+        tossAngle = 0;
     }
     strokeWeight(1);
+}
+
+function levelChange(lev){
+    console.log(lev);
+    switch(lev){
+        case 1:
+            break;
+        case 2:
+            prop.numMeteors += 1;
+            break;
+        case 3:
+            prop.meteorSpeed = width / 80;
+            prop.wavesp += 2;
+            break;
+        case 4:
+            prop.numMeteors += 1;
+            break;
+        case 5:
+            prop.meteorSize = 7;
+            break;
+    }
 }
