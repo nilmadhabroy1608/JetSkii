@@ -355,7 +355,6 @@ function displayMeteor(){
             nOff++;
         }
         endShape(CLOSE);
-        //ellipse(0,0,m.r*2);
         pop();
     }
 }
@@ -457,11 +456,12 @@ function showScore() {
     noStroke();
     textAlign(LEFT, CENTER);
     fill(255, 180, 0).textSize(fontSize);
-    //fr = frameCount - del;
-    score = round(frameCount / 60);
     text('Score : ' + score, posX, posY);
-    if(score != 0 && score % 10 === 0 && floor(score/10) > curLevel-1)
-        levelChange(++curLevel);
+    if(screen == 'PLAY'){
+        score = round(frameCount / 60);
+        if(score != 0 && score % 10 === 0 && floor(score/10) > curLevel-1)
+            levelChange(++curLevel);
+    }
     pop();
 }
 
@@ -484,7 +484,6 @@ function showHealthBar() {
 }
 
 function levelChange(lev){
-    console.log(lev);
     switch(lev){
         case 1:
             break;
@@ -499,7 +498,18 @@ function levelChange(lev){
             prop.numMeteors += 1;
             break;
         case 5:
-            prop.meteorSize = 7;
+            prop.meteorSize += 1;
+            break;
+        case 6:
+            prop.meteorSpeed = width / 60;
+            prop.wavesp += 4;
+            prop.slant -= 5;
+            break;
+        case 7:
+            prop.numMeteors += 1;
+            break;
+        case 8:
+            prop.meteorSize += 1;
             break;
     }
 }
