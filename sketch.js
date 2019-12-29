@@ -16,6 +16,7 @@ let tossAngle;
 let damage; //greater its value is, less is the damage (range: 0 - 255)
 let curLevel;
 let score;
+let oceanFloor;
 
 function preload(){
 	//theme song
@@ -111,12 +112,13 @@ function setup(){
         }
     };
 
+    nOff = 0;
+    fireOffset = 0;
+
     meteors = [];
     for (let i = 0; i < prop.numMeteors; i++)
         addMeteor(i);
 
-    nOff = 0;
-    fireOffset = 0;
 
     health = 100;
     dec = 100;
@@ -124,6 +126,17 @@ function setup(){
     damage = 255 ;
 
     tossAngle = 0;
+
+    //ocean floor
+    surf = color(0, 128, 255, 200);//surface color
+    flor = color(0, 0, 255, 255);//floor color
+    oceanFloor=[];
+    for (let i = prop.elev,inc = res / 2; i <= height; i += inc) {
+        oceanFloor.push({
+            col : lerpColor(surf, flor, map(i, prop.elev, height, 0, 1)),
+            val : i,
+        });
+    }
 }
 
 function draw() {
@@ -186,7 +199,7 @@ function draw() {
 
 function mouseDragged() {
     cond = (mouseX > 0 && mouseX < width) && (mouseY > 0 && mouseY < height);
-    if (cond && drag == 0 && !headstart)
+    if (cond && drag == 0 && !headstart && screen=='PLAY')
         drag = mouseX - jet.x;
 }
 
@@ -319,13 +332,24 @@ function crashCheck() {
 }
 
 function addMeteor(index) {
-    rad=random(width * prop.meteorSize / 250, width * prop.meteorSize / 150);
+    rad=floor(random(width * prop.meteorSize / 250, width * prop.meteorSize / 150));
+    temp = [];
+    for(let i = 0; i < 360; i += res){
+        cons = rad * (1 + noise(nOff) / 2); //Rock Disfiguration
+        temp.push({
+            x : cons * cos(i),
+            y : cons * sin(i),
+        });
+        nOff++;
+    }
     meteors.splice(index, 0, {
         x: random(height + rad / 2, 2 * width - rad / 2),
         y: random(-(height - rad / 2), -rad / 2),
-        r: floor(rad),
+        r: rad,
         c: false,
         d: false,
+        pts : temp,
+        ang : 360,
     });
 }
 
@@ -347,13 +371,19 @@ function displayMeteor(){
         beginShape();
         stroke(255, (nOff % 100) + 75, 0);
         fill(139, 69, 19);//brown color
-        for(let i = 0; i < 360; i += res){
-            cons = m.r * (1 + noise(nOff) / 2); //Rock Disfiguration
-            vx = cons * cos(i);
-            vy = cons * sin(i);
-            vertex(vx, vy);
-            nOff++;
+        rotate(m.ang);                          //REMOVE ROTATION
+        for(let i = 0; i < m.pts.length; i++){
+            vertex(m.pts[i].x, m.pts[i].y);
         }
+        m.ang -= (m.ang)?20:-360;
+        /*for(let i = m.off, lim = (m.off)?m.off-1:m.pts.length; i != lim; i++){
+            if(i==m.pts.length){
+                i=0;
+                ++lim;
+            }
+            vertex(m.pts[i].x, m.pts[i].y);
+        }
+        m.off=(m.off+1)%m.pts.length;*/
         endShape(CLOSE);
         pop();
     }
@@ -391,11 +421,8 @@ function updateMeteor(){
 }
 
 function createWave() {
-    surf = color(0, 128, 255, 200);//surface color
-    flor = color(0, 0, 255, 255);//floor color
-
     noStroke();
-    fill(surf)
+    fill(color(0, 128, 255, 200))
 
     //displaying surface waves pattern
     beginShape();
@@ -409,10 +436,9 @@ function createWave() {
     endShape(CLOSE);
 
     //Ocean Floor
-    for (let i = prop.elev; i <= height; i += res / 2) {
-        amt = map(i, prop.elev, height, 0, 1);
-        fill(lerpColor(surf, flor, amt));
-        rect(0, i, width, res/2);
+    for (let i = 0, inc = res / 2; i < oceanFloor.length; i++) {
+        fill(oceanFloor[i].col);
+        rect(0, oceanFloor[i].val, width, inc);
     }
 }
 
