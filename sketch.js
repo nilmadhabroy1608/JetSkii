@@ -13,7 +13,6 @@ let fireOffset;
 let health;
 let dec;
 let tossAngle;
-//let damage; //greater its value is, less is the damage (range: 0 - 255)
 let curLevel;
 let score;
 let oceanFloor;
@@ -21,6 +20,7 @@ let fireLines;
 let rider;
 let song;
 let ind;
+let bg;
 
 let fr=0;
 
@@ -28,6 +28,8 @@ function preload(){
     //theme song
     //song = loadSound('./sound/TheOcean.mp3');
     song = loadSound('./sound/LifeIsMusic.mp3');
+    //Cover Image
+    cover = loadImage('./images/JetSkii.png');
     //Jet (main object)
     rider = loadImage('./images/jet.gif');
     //sound On image
@@ -38,6 +40,8 @@ function preload(){
     //tree = loadImage('./images/tree.png');
     //font load
     bcr = loadFont('./assets/BalooChettan-Regular.ttf');
+    sso = loadFont('./assets/SonsieOne.ttf');
+
 }
 
 function setup(){
@@ -46,7 +50,7 @@ function setup(){
     res = 20;
 
     //set screen status
-    screen='PLAY';
+    screen='START';
 
     //getting best window width/height size
     winSize = window.innerWidth;
@@ -61,9 +65,6 @@ function setup(){
     angleMode(DEGREES);
     ellipseMode(CENTER);
     textAlign(CENTER, CENTER);
-
-    //font setting
-    textFont(bcr);
 
     //sound setting
     getAudioContext().resume();
@@ -139,6 +140,8 @@ function setup(){
 
     tossAngle = 0;
 
+    bg = 0;
+
     //ocean floor
     surf = color(0, 128, 255, 200);//surface color
     flor = color(0, 0, 255, 255);//floor color
@@ -149,64 +152,99 @@ function setup(){
             val : i,
         });
     }
+
+    //Start Screen Setting
+    pr = color(184,77,97);//pinkish red
+    //                  bg = color(86,139,170);//bluish grey
+    //                  mr = color(121,26,56);//maroonish red
+    db = color(37,50,85);//dark blue
+    background(cover);
+    textFont(sso, width/6);
+    strokeWeight(10);
+    fill(pr);//pinkish red
+    stroke(db);//dark blue
+    text("JetSkii",width/2, height/6);
+    noLoop();
+
+    //font setting
+    textFont(bcr);
+    strokeWeight(1);
 }
 
 function draw() {
 
-    //JET MOVEMENT/CONTROLS
-    if(!headstart && screen=='PLAY'){
-        let move = jet.speed;
-        let boundary={
-            left : ceil(jet.width / 2),
-            right : floor(width - jet.width / 2),
-        };
-        //Mouse Control
-        if (drag != 0) {
-            move = constrain(mouseX - drag, boundary.left, boundary.right);
-            jet.x = lerp(jet.x, move, 0.2);
+    if(screen=='PLAY' || screen=='PAUSE' || screen=='OVER'){
+
+        //JET MOVEMENT/CONTROLS
+        if(!headstart && screen=='PLAY'){
+            let move = jet.speed;
+            let boundary={
+                left : ceil(jet.width / 2),
+                right : floor(width - jet.width / 2),
+            };
+            //Mouse Control
+            if (drag != 0) {
+                move = constrain(mouseX - drag, boundary.left, boundary.right);
+                jet.x = lerp(jet.x, move, 0.2);
+            }
+            //Keyboard Control
+            if (keyIsDown(LEFT_ARROW))
+                jet.x = constrain(jet.x - move, boundary.left, boundary.right);
+            if (keyIsDown(RIGHT_ARROW))
+                jet.x = constrain(jet.x + move, boundary.left, boundary.right);
+        } else if(screen == 'OVER' && jet.x > -jet.width/2){
+            drag=0;
+            jet.x -= res / 1.5;
+            jet.y = lerp(jet.y, height, 0.05);
         }
-        //Keyboard Control
-        if (keyIsDown(LEFT_ARROW))
-            jet.x = constrain(jet.x - move, boundary.left, boundary.right);
-        if (keyIsDown(RIGHT_ARROW))
-            jet.x = constrain(jet.x + move, boundary.left, boundary.right);
-    } else if(screen == 'OVER' && jet.x > -jet.width/2){
-        jet.x -= res / 1.5;
-        jet.y = lerp(jet.y, height, 0.05);
-    }
-    
-    //Background Sky
-    background(222, 235, 247);
+        
+        //Background
+        background(222, 235, 247);
 
-    //METEORS
-    if (/*(screen == 'PLAY' || screen == 'OVER') &&*/ !headstart){
-        displayMeteor();
-        updateMeteor();
-    }
+        //METEORS
+        if ((screen == 'PLAY' || screen == 'OVER') && !headstart){
+            displayMeteor();
+            updateMeteor();
+        }
 
-    //WAVE UPDATION
-    updateWave();
+        //WAVE UPDATION
+        updateWave();
 
-    //JET UPDATION AND DISPLAY
-    if((screen == 'OVER' && jet.x >= -jet.width/2) || screen == 'PLAY' || screen == 'PAUSE'){
-        slideJet();
-        displayJet();
-    }
+        //JET UPDATION AND DISPLAY
+        if((screen == 'OVER' && jet.x >= -jet.width/2) || screen == 'PLAY' || screen == 'PAUSE'){
+            slideJet();
+            displayJet();
+        }
 
-    //CRASH
-    crashCheck();
+        //CRASH
+        crashCheck();
 
-    //WAVE
-    createWave();
+        //WAVE
+        createWave();
 
-    //PLAY/PAUSE BUTTON
-    playpause();
+        if(!headstart){
+            if (screen!='OVER') {
+                //SCORE
+                showScore();
+                //HEALTH
+                showHealthBar();
+            }
+            //PLAY/PAUSE BUTTON
+            playpause();
+        } else {
+            push();
+            rectMode(CORNERS);
+            if(jet.x < width/4)
+                h=height/8
+            else
+                h=map(jet.x, width/4, width/2, height/8, 0);
+            fill(0);
+            rect(0,0,width, h);
+            rect(0,height - h,width, height);
+            pop();
+        }
 
-    //SCORE
-    showScore();
-
-    if(!headstart)
-        showHealthBar();
+    }    
 }
 
 function mouseDragged() {
@@ -221,11 +259,14 @@ function mouseReleased() {
 
 function mousePressed() {
     cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
-    if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 'PLAY') {
+    if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 'PLAY' && !headstart) {
         screen = "PAUSE";
         noLoop();
     } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 'PAUSE'){
         screen = "PLAY";
+        loop();
+    } else if(cond && screen=='START'){
+        screen='PLAY';
         loop();
     }
     return false;
@@ -233,24 +274,19 @@ function mousePressed() {
 
 function keyPressed() {
     if (key === ' ') {
-        if (screen == "PLAY") {
+        if (screen == "PLAY" && !headstart) {
             screen = "PAUSE";
             noLoop();
-        } else if (screen == "PAUSE") {
+        } else if (screen == "PAUSE" || screen == "START") {
             screen = "PLAY";
             loop();
         }
     }
-
-    //FOR DEBUGGING
-    if (key >= '1' && key <= '9')
-        frameRate(key.valueOf() * 10);
-    return false;
 }
 
 function slideJet() {
     if (headstart){
-        jet.x = jet.x + res / 5;
+        jet.x = jet.x + res / 10;
         wp = abs(floor(jet.x / res));
         jet.y = waves[wp] - prop.tide / 2;
         headstart = !(jet.x >= width / 2);
@@ -272,10 +308,6 @@ function slideJet() {
 
             //jet.y = newY;
         }
-
-        //FOR DEBUGGING
-        if(isNaN(jet.y) || isNaN(jet.x))
-            noLoop();
     }
 }
 
@@ -392,6 +424,7 @@ function addMeteor(index) {
         d: false,
         pts : temp,
         ang : 360,
+        sp : (curLevel > 4)?prop.meteorSpeed:random(prop.meteorSpeed, prop.meteorSpeed * 1.25),
     });
 }
 
@@ -443,8 +476,8 @@ function updateMeteor(){
     for (let i = 0; i < prop.numMeteors; i++){
         m=meteors[i];
         //Shifting Meteors
-        m.x -= prop.meteorSpeed;
-        m.y += prop.meteorSpeed;
+        m.x -= m.sp;
+        m.y += m.sp;
 
         if(m.y > prop.elev && !m.d && m.x > 0 && m.x < width){
             waveHeight = m.r * 1.25;
@@ -517,12 +550,18 @@ function playpause() {
         translate((width - halt.play.s)/2 , (height - halt.play.s)/2);
         triangle(0, 0, 0, halt.play.s, halt.play.s, halt.play.s / 2);
         pop();
+    } else if (screen == 'OVER' && jet.x < -jet.width/2) {
+        background(255, bg);
+        bg = lerp(bg, 150, 0.05);
+        if(bg >= 135){
+            textSize(80);
+            text("RUDY\nDROWNED !\n\nScore : "+score,width/2, height/2);
+        }
     }
 }
 
 function showScore() {
     fontSize = height * 5 / 76;
-    //wd = fontSize / 2.20;
     posY = height * 18 / 20;
     posX = width / 20;
     push();
@@ -572,11 +611,11 @@ function levelChange(lev){
             prop.wavesp += 2;
             break;
         case 4:
-            prop.numMeteors += 1;
-            break;
-        case 5:
             prop.meteorSize += 1;
             updateFire(prop.meteorSize);
+            break;
+        case 5:
+            //random meteor speeds
             break;
         case 6:
             prop.meteorSpeed = width / 60;
@@ -590,8 +629,15 @@ function levelChange(lev){
             prop.meteorSize += 1;
             updateFire(prop.meteorSize);
             break;
+        case 9:
+            prop.numMeteors += 1;
+            break;
     }
 }
 
-//Global Firelines for all meteors, will update only when prop.meteorSize changes
-//Smooth Wave creation introducing splash
+//HEADSTART should be converted to screen='HEADSTART' option
+//Meteor's LOOP should be in draw function rather than in displayMeteor() and updateMeteor()
+//change of WATER COLOR to color(110,177,183); and change jet.gif and background sky
+//redefine sketch with more LOCAL variables rather than GLOBAL ones
+//better levelChange(lev) function
+//adding REPLAY and SHARE/SAVE button
