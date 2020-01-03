@@ -143,8 +143,10 @@ function setup(){
     bg = 0;
 
     //ocean floor
-    surf = color(0, 128, 255, 200);//surface color
-    flor = color(0, 0, 255, 255);//floor color
+    //surf = color(151, 221, 223, 200);//surface color
+    surf = color(50, 157, 202, 200);
+    //flor = color(110, 177, 183, 255);//floor color
+    flor = color(32, 100, 129, 255);//floor color
     oceanFloor=[];
     for (let i = prop.elev,inc = res / 2; i <= height; i += inc) {
         oceanFloor.push({
@@ -502,7 +504,8 @@ function updateMeteor(){
 
 function createWave() {
     noStroke();
-    fill(color(0, 128, 255, 200))
+    //fill(color(151, 221, 223, 200));
+    fill(color(50,157,202, 200));
 
     //displaying surface waves pattern
     beginShape();
