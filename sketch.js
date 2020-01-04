@@ -22,7 +22,7 @@ let song;
 let ind;
 let bg;
 
-let fr=0;
+let fr=[];
 
 function preload(){
     //theme song
@@ -101,12 +101,10 @@ function setup(){
         speed: width / 60,
     };
     jet.x = - jet.width / 2;
+    jet.y = prop.elev - jet.tide / 2;
     rider.pause();
     rider.setFrame(0);
     rider.delay(100);
-
-    wp = abs(floor(jet.x / res));   //wave particle that's elevating the jet
-    y = waves[wp] - prop.tide/2;
 
     headstart = true;
 
@@ -203,23 +201,32 @@ function draw() {
         //Background
         background(222, 235, 247);
 
-        //METEORS
-        if ((screen == 'PLAY' || screen == 'OVER') && !headstart){
-            displayMeteor();
-            updateMeteor();
-        }
 
         //WAVE UPDATION
         updateWave();
+        for(let i = 0; i < prop.numMeteors; i++){
+            let m = meteors[i];
+            //CRASH
+            if(!m.c && (m.y + m.r) > (jet.y - jet.height / 2) && (m.y - m.r) < (jet.y + jet.height / 2) && abs(m.x - jet.x) < (m.r + jet.width / 2))
+                dec = crashCheck(m, jet, dec);
+
+            let val = res * prop.meteorSize * ((pixelDensity() > 1)?2:1) / 25;
+            //METEORS
+            if ((screen == 'PLAY' || screen == 'OVER') && !headstart){
+                let val = res * prop.meteorSize * ((pixelDensity() > 1)?2:1) / 25;
+                displayMeteor(m, val);
+
+                if (meteors.length < prop.numMeteors)
+                    addMeteor(0);
+                updateMeteor(i);
+            }
+        }
 
         //JET UPDATION AND DISPLAY
         if((screen == 'OVER' && jet.x >= -jet.width/2) || screen == 'PLAY' || screen == 'PAUSE'){
-            slideJet();
-            displayJet();
+            //wp = slideJet(jet, prop);
+            displayJet(jet, slideJet(jet, prop));
         }
-
-        //CRASH
-        crashCheck();
 
         //WAVE
         createWave();
@@ -286,7 +293,7 @@ function keyPressed() {
     }
 }
 
-function slideJet() {
+function slideJet(jet, prop) {
     if (headstart){
         jet.x = jet.x + res / 10;
         wp = abs(floor(jet.x / res));
@@ -304,39 +311,24 @@ function slideJet() {
             if (screen != 'PLAY')
                 amt = 0;
             jet.y = lerp(jet.y, newY, amt);
-
-            // if(jet.y < newY)
-            //     jet.y += (newY - jet.y) * 0.2;
-
-            //jet.y = newY;
         }
     }
+    return wp;
 }
 
-function displayJet() {
+function displayJet(jet, pt) {
     push();
     translate(jet.x, jet.y);
     if(screen == 'PLAY' || screen == 'PAUSE'){
         let inc = floor(jet.width / res / 2) - 1;
-        let dy = waves[wp + inc] - waves[wp - inc];
+        let dy = waves[pt + inc] - waves[pt - inc];
         let dx = res * inc * 2;
         let angle = atan(dy/dx);
-        /*if(tossAngle == 0){
-            angle = atan(dy/dx);//when angle is >=45 degrees forward then stay in that position for a while
-        }
-        if (angle < -10){
-            rotate(angle);
-            tossAngle = angle;
-        }*/
         rotate(angle);
     } else if (screen == 'OVER'){
         rotate(tossAngle);
         tossAngle -= 10;
     }
-    /*if (damage <= 250) {
-        damage = lerp(damage, 255, 0.2);
-        tint(255, damage, damage);
-    }*/
     if(rider.getCurrentFrame() == rider.numFrames()-1){
         rider.pause();
         rider.setFrame(0);
@@ -345,41 +337,34 @@ function displayJet() {
     pop();
 }
 
-function crashCheck() {
-    for (let i = 0; i < prop.numMeteors; i++) {
-        if (meteors[i].c)
-            continue;
-        let m = meteors[i];
-        if (!m.c && (m.y + m.r) > (jet.y - jet.height / 2) && (m.y - m.r) < (jet.y + jet.height / 2) && abs(m.x - jet.x) < (m.r + jet.width / 2)) {
-            
-            x1 = 0;
-            y1 = jet.height;
-            x2 = jet.width;
-            y2 = jet.height * 5.75 / 9;
-            x3 = jet.width * 4.74 / 15;
-            y3 = 0;
+function crashCheck(m, jet, d) {
+    x1 = 0;
+    y1 = jet.height;
+    x2 = jet.width;
+    y2 = jet.height * 5.75 / 9;
+    x3 = jet.width * 4.74 / 15;
+    y3 = 0;
 
-            //slopes
-            m1 = (y2 - y3) / (x2 - x3); //slope1
-            m2 = (y3 - y1) / (x3 - x1); //slope2
+    //slopes
+    m1 = (y2 - y3) / (x2 - x3); //slope1
+    m2 = (y3 - y1) / (x3 - x1); //slope2
 
-            //y-intercepts
-            c1 = (y3 + jet.y - y1 / 2) - m1 * (x3 + jet.x - x2 / 2); //y-intercept1
-            c2 = (y1 + jet.y - y1 / 2) - m2 * (x1 + jet.x - x2 / 2); //y-intercept2
+    //y-intercepts
+    c1 = (y3 + jet.y - y1 / 2) - m1 * (x3 + jet.x - x2 / 2); //y-intercept1
+    c2 = (y1 + jet.y - y1 / 2) - m2 * (x1 + jet.x - x2 / 2); //y-intercept2
 
-            //perpendicular distance
-            d1 = abs(-m1 * m.x + m.y - c1) / sqrt((m1 * m1) + 1);
-            d2 = abs(-m2 * m.x + m.y - c2) / sqrt((m2 * m2) + 1);
+    //perpendicular distance
+    d1 = abs(-m1 * m.x + m.y - c1) / sqrt((m1 * m1) + 1);
+    d2 = abs(-m2 * m.x + m.y - c2) / sqrt((m2 * m2) + 1);
 
-            //If crashed i.e. crash boundary crossed
-            if ((m.x <= (jet.x - x2 / 2 + x3) && d2 < m.r / 2) || (m.x > (jet.x - x2 / 2 + x3) && d1 < m.r / 2)) {
-                //damage = 0;
-                dec = constrain(dec - m.r, 0, 100);
-                m.c = true;
-                rider.play();
-            }
-        }
+    //If crashed i.e. crash boundary crossed
+    if ((m.x <= (jet.x - x2 / 2 + x3) && d2 < m.r / 2) || (m.x > (jet.x - x2 / 2 + x3) && d1 < m.r / 2)) {
+        //damage = 0;
+        m.c = true;
+        rider.play();
+        return constrain(d - m.r, 0, 100);
     }
+    return d;
 }
 
 function updateFire(size){
@@ -430,75 +415,66 @@ function addMeteor(index) {
     });
 }
 
-function displayMeteor(){
-    let val = res * prop.meteorSize / 25;
-    val *= (pixelDensity() > 1)?2:1;
-    for(m of meteors){
-        push();
-        translate(m.x, m.y);
-        strokeWeight(val);
-        //inc = res * prop.meteorSize / 35;
-        for(let i = -m.r / sqrt(2), l = -i, inc = val/1.4; i <= l && m.y < prop.elev; i += inc){
-            p = fireLines[ind];
-            stroke(p.col);
-            line(i, i, i + p.x , i - p.y);
-            ind = (ind+1)%fireLines.length;
-        }
-        
-        beginShape();
-        stroke(255, (nOff % 100) + 75, 0);
-        fill(139, 69, 19);//brown color
-        rotate(m.ang);                          //REMOVE ROTATION
-        for(let i = 0; i < m.pts.length; i++){
-            vertex(m.pts[i].x, m.pts[i].y);
-        }
-        endShape(CLOSE);
-        m.ang -= (m.ang)?20:-360;
-        
-        /*
-        for(let i = m.off, lim = (m.off)?m.off-1:m.pts.length; i != lim; i++){
-            if(i==m.pts.length){
-                i=0;
-                ++lim;
-            }
-            vertex(m.pts[i].x, m.pts[i].y);
-        }
-        m.off=(m.off+1)%m.pts.length;
-        
-        endShape(CLOSE);
-        */
-        pop();
+function displayMeteor(m, val){
+    push();
+    translate(m.x, m.y);
+    strokeWeight(val);
+    //inc = res * prop.meteorSize / 35;
+    for(let i = -m.r / sqrt(2), l = -i, inc = val/1.4; i <= l && m.y < prop.elev; i += inc){
+        p = fireLines[ind];
+        stroke(p.col);
+        line(i, i, i + p.x , i - p.y);
+        ind = (ind+1)%fireLines.length;
     }
+    
+    beginShape();
+    stroke(255, (nOff % 100) + 75, 0);
+    fill(139, 69, 19);//brown color
+    rotate(m.ang);                          //REMOVE ROTATION
+    for(let i = 0; i < m.pts.length; i++){
+        vertex(m.pts[i].x, m.pts[i].y);
+    }
+    endShape(CLOSE);
+    m.ang -= (m.ang)?20:-360;
+    
+    /*
+    for(let i = m.off, lim = (m.off)?m.off-1:m.pts.length; i != lim; i++){
+        if(i==m.pts.length){
+            i=0;
+            ++lim;
+        }
+        vertex(m.pts[i].x, m.pts[i].y);
+    }
+    m.off=(m.off+1)%m.pts.length;
+    
+    endShape(CLOSE);
+    */
+    pop();
 }
 
-function updateMeteor(){
-    if (meteors.length < prop.numMeteors)
-        addMeteor(0);
+function updateMeteor(i){
+    m=meteors[i];
+    //Shifting Meteors
+    m.x -= m.sp;
+    m.y += m.sp;
 
-    for (let i = 0; i < prop.numMeteors; i++){
-        m=meteors[i];
-        //Shifting Meteors
-        m.x -= m.sp;
-        m.y += m.sp;
-
-        if(m.y > prop.elev && !m.d && m.x > 0 && m.x < width){
-            waveHeight = m.r * 1.25;
-            low = floor((m.x - waveHeight * 5)/res); //floor((m.x - m.r * 4)/res);
-            upp = ceil((m.x + waveHeight * 4)/res);  //floor((m.x - m.r * 4)/res);
-            low = (low < 0)?0:low;
-            upp = (upp >= waves.length)?waves.length-1:upp;
-            for(let j = low; j <= upp; j++){
-                //elevating/rising/creating waves
-                waves[j] -= waveHeight * (1 - cos(map(j, low, upp, 0, 360)));
-            }
-            m.d = true;
+    if(m.y > prop.elev && !m.d && m.x > 0 && m.x < width){
+        waveHeight = m.r * 1.25;
+        low = floor((m.x - waveHeight * 5)/res); //floor((m.x - m.r * 4)/res);
+        upp = ceil((m.x + waveHeight * 4)/res);  //floor((m.x - m.r * 4)/res);
+        low = (low < 0)?0:low;
+        upp = (upp >= waves.length)?waves.length-1:upp;
+        for(let j = low; j <= upp; j++){
+            //elevating/rising/creating waves
+            waves[j] -= waveHeight * (1 - cos(map(j, low, upp, 0, 360)));
         }
+        m.d = true;
+    }
 
-        //create new ones when a meteor drowns or goes out of the visible area
-        if((m.y - m.r) > (prop.elev + prop.tide * 1.5) || (m.x + m.r) < 0){
-            meteors.splice(i, 1);
-            addMeteor(i);
-        }
+    //create new ones when a meteor drowns or goes out of the visible area
+    if((m.y - m.r) > (prop.elev + prop.tide * 1.5) || (m.x + m.r) < 0){
+        meteors.splice(i, 1);
+        addMeteor(i);
     }
 }
 
@@ -558,7 +534,9 @@ function playpause() {
         bg = lerp(bg, 150, 0.05);
         if(bg >= 135){
             textSize(80);
-            text("RUDY\nDROWNED !\n\nScore : "+score,width/2, height/2);
+            avfr=fr.reduce((sum, x) => sum+x);
+            avfr/=fr.length;
+            text("RUDY\nDROWNED !\n\nScore : "+score+"\nAvg. Fr. : "+round(avfr),width/2, height/2);
         }
     }
 }
@@ -592,8 +570,8 @@ function showHealthBar() {
     fill(255).textSize(h).strokeWeight(3);
 
     if(frameCount % 10 == 0)
-        fr=frameRate();
-    text(/*"HEALTH"*/int(fr), h + w / 2, h + height / 100);
+        fr.push(frameRate());
+    text(/*"HEALTH"*/int(fr[fr.length-1]), h + w / 2, h + height / 100);
 
     if(health <= 0.5 && screen != 'OVER') {
         screen = 'OVER';
