@@ -566,7 +566,7 @@ function levelChange(lev){
             prop.numMeteors += 1;
             break;
         case 3:
-            prop.meteorSpeed = width / 80;
+            prop.meteorSpeed = width / 100;
             prop.wavesp += 2;
             break;
         case 4:
@@ -577,18 +577,23 @@ function levelChange(lev){
             //random meteor speeds
             break;
         case 6:
-            prop.meteorSpeed = width / 60;
+            prop.meteorSpeed = width / 80;
             prop.wavesp += 4;
-            prop.slant -= 5;
+            prop.slant -= 3;
             break;
         case 7:
             prop.numMeteors += 1;
             break;
         case 8:
+            prop.meteorSpeed = width / 60;
+            prop.wavesp += 4;
+            prop.slant -= 2;
+            break;
+        case 9:
             prop.meteorSize += 1;
             updateFire(prop.meteorSize);
             break;
-        case 9:
+        case 10:
             prop.numMeteors += 1;
             break;
     }
