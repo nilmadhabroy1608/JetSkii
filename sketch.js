@@ -65,7 +65,7 @@ function setup(){
     screen=1;
 
     //getting best window width/height size
-    winSize = window.innerWidth;
+    let winSize = window.innerWidth;
     if (window.innerHeight < winSize)
         winSize = window.innerHeight;
     winSize = int(winSize/res) * res;
