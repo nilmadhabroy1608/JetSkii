@@ -244,6 +244,9 @@ function mousePressed() {
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 4) {
         screen = 5;
         noLoop();
+    } else if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 5) {
+        if(song.isLooping())
+            song.play();
     } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 5){
         screen = 4;
         loop();
@@ -473,7 +476,19 @@ function showState(halt, bg) {
         background(0, 200);
         translate((width - halt.play.s)/2 , (height - halt.play.s)/2);
         triangle(0, 0, 0, halt.play.s, halt.play.s, halt.play.s / 2);
+        translate(halt.pause.x - (width - halt.play.s)/2, halt.pause.y - (height - halt.play.s)/2);
+        fill(0, 255, 0);
+        beginShape();
+        vertex(0,75);
+        vertex(0,175);
+        vertex(50,175);
+        vertex(125,250);
+        vertex(125,0);
+        vertex(50,75);
+        vertex(0,75);
+        endShape(CLOSE);
         pop();
+        push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
         background(255, bg);
         bg = lerp(bg, 150, 0.05);
