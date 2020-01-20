@@ -477,16 +477,26 @@ function showState(halt, bg) {
         translate((width - halt.play.s)/2 , (height - halt.play.s)/2);
         triangle(0, 0, 0, halt.play.s, halt.play.s, halt.play.s / 2);
         translate(halt.pause.x - (width - halt.play.s)/2, halt.pause.y - (height - halt.play.s)/2);
+        
+        //rect(0,0,halt.pause.s,halt.pause.s);
+
         fill(0, 255, 0);
+        noStroke();
         beginShape();
-        vertex(0,75);
-        vertex(0,175);
-        vertex(50,175);
-        vertex(125,250);
-        vertex(125,0);
-        vertex(50,75);
-        vertex(0,75);
+        vertex(0,halt.pause.s*0.3);
+        vertex(0,halt.pause.s*0.7);
+        vertex(halt.pause.s*0.2,halt.pause.s*0.7);
+        vertex(halt.pause.s*0.5,halt.pause.s);
+        vertex(halt.pause.s*0.5,0);
+        vertex(halt.pause.s*0.2,halt.pause.s*0.3);
+        vertex(0,halt.pause.s*0.3);
         endShape(CLOSE);
+        noFill();
+        strokeWeight(5);
+        stroke(0, 255, 0);
+        arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s, halt.pause.s, -45, 45);
+        arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s/1.5, halt.pause.s/1.5, -45, 45);
+        
         pop();
         push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
