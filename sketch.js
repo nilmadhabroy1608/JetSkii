@@ -151,6 +151,11 @@ function setup(){
 
 function draw() {
 
+    if(!focused && screen != 6){
+        screen = 5;
+        noLoop();
+    }
+
     //JET MOVEMENT/CONTROLS
     if(screen==4){
         let move = jet.speed;
@@ -503,15 +508,8 @@ function showState(halt, bg) {
             fill(255, 0, 0);
         }
         noStroke();
-        beginShape();
-        vertex(shift, halt.pause.s * 0.3);
-        vertex(shift, halt.pause.s * 0.7);
-        vertex(shift + halt.pause.s * 0.2, halt.pause.s * 0.7);
-        vertex(shift + halt.pause.s * 0.5, halt.pause.s);
-        vertex(shift + halt.pause.s * 0.5, 0);
-        vertex(shift + halt.pause.s * 0.2, halt.pause.s * 0.3);
-        vertex(shift, halt.pause.s * 0.3);
-        endShape(CLOSE);
+        rect(shift, halt.pause.s * 0.3, halt.pause.s * 0.2, halt.pause.s * 0.4);
+        triangle(shift, halt.pause.s/2, shift + halt.pause.s * 0.5, 0, shift + halt.pause.s * 0.5, halt.pause.s);
         pop();
         push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
@@ -519,8 +517,13 @@ function showState(halt, bg) {
         bg = lerp(bg, 150, 0.05);
         if(bg >= 135){
             bg = 150;
-            textSize(80);
-            text("RUDY\nDROWNED !\n\nScore : "+score,width/2, height/2);
+            textFont(bcr, height/7.5);
+            text("RUDY\nDROWNED !\nScore : "+score,width/2, height*2/3);
+            textFont(sso, width/6);
+            strokeWeight(10);
+            fill(184,77,97);//pinkish red
+            stroke(37,50,85);//dark blue
+            text("JetSkii",width/2, height/6);
         }
     } else if (screen == 1) {
         //START Screen Setting
