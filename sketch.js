@@ -18,8 +18,7 @@ let fireLines;
 let ind;
 let bg;
 let cond;
-
-let fr = 0;
+let scoreFilter;
 
 function preload(){
     //theme song
@@ -79,11 +78,11 @@ function setup(){
     textAlign(CENTER, CENTER);
 
     //sound setting
-    getAudioContext().resume();
+    //getAudioContext().resume();
     //sound mode setting
     song.playMode('restart');
     //sound start
-    song.loop();
+    song.pause();
 
     //setting game properties
     prop = {
@@ -106,6 +105,7 @@ function setup(){
 
     curLevel = 0;
     score = 1;
+    scoreFilter = 0;
 
     jet = {
         width: 15 * (width / 60), //15:9
@@ -190,11 +190,15 @@ function draw() {
         //METEORS
         if (screen == 4 || screen == 6 || screen == 5){
             const val = res * prop.meteorSize * ((pixelDensity() > 1)?2:1) / 25;
-            ind = displayMeteor(m, val, prop.elev, fireLines, ind);
+            if (screen != 5)
+                ind = displayMeteor(m, val, prop.elev, fireLines, ind);
+            else
+                displayMeteor(m, val, prop.elev, fireLines, ind);
 
             if (meteors.length < prop.numMeteors)
                 addMeteor(0, prop.meteorSize, prop.meteorSpeed);
-            updateMeteor(i, prop);
+            if (screen != 5)
+                updateMeteor(i, prop);
         }
     }
 
@@ -245,8 +249,13 @@ function mousePressed() {
         screen = 5;
         noLoop();
     } else if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 5) {
-        if(song.isLooping())
-            song.play();
+        if(song.isLooping() || song.isPlaying())
+            song.pause();
+        else
+            song.loop();
+        scoreFilter += 2;
+        loop();
+        noLoop();
     } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 5){
         screen = 4;
         loop();
@@ -403,7 +412,8 @@ function displayMeteor(m, val, el, fire, ind){
     for(let i = 0; i < m.pts.length; i++)
         vertex(m.pts[i].x, m.pts[i].y);
     endShape(CLOSE);
-    m.ang -= (m.ang)?20:-360;
+    if(screen != 5)
+        m.ang -= (m.ang)?20:-360;
     pop();
     return ind;
 }
@@ -477,26 +487,31 @@ function showState(halt, bg) {
         translate((width - halt.play.s)/2 , (height - halt.play.s)/2);
         triangle(0, 0, 0, halt.play.s, halt.play.s, halt.play.s / 2);
         translate(halt.pause.x - (width - halt.play.s)/2, halt.pause.y - (height - halt.play.s)/2);
-        
-        //rect(0,0,halt.pause.s,halt.pause.s);
-
-        fill(0, 255, 0);
-        noStroke();
-        beginShape();
-        vertex(0,halt.pause.s*0.3);
-        vertex(0,halt.pause.s*0.7);
-        vertex(halt.pause.s*0.2,halt.pause.s*0.7);
-        vertex(halt.pause.s*0.5,halt.pause.s);
-        vertex(halt.pause.s*0.5,0);
-        vertex(halt.pause.s*0.2,halt.pause.s*0.3);
-        vertex(0,halt.pause.s*0.3);
-        endShape(CLOSE);
+        let shift;
         noFill();
         strokeWeight(5);
-        stroke(0, 255, 0);
-        arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s, halt.pause.s, -45, 45);
-        arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s/1.5, halt.pause.s/1.5, -45, 45);
-        
+        if(song.isLooping() || song.isPlaying()){
+            stroke(0, 255, 0);
+            shift = 0;
+            arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s, halt.pause.s, -45, 45);
+            arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s/1.5, halt.pause.s/1.5, -45, 45);
+            fill(0, 255, 0);
+        } else {
+            stroke(255, 0, 0);
+            shift = halt.pause.s / 4;
+            line(shift/2, shift/2, halt.pause.s -shift/4, halt.pause.s -shift/4);
+            fill(255, 0, 0);
+        }
+        noStroke();
+        beginShape();
+        vertex(shift, halt.pause.s * 0.3);
+        vertex(shift, halt.pause.s * 0.7);
+        vertex(shift + halt.pause.s * 0.2, halt.pause.s * 0.7);
+        vertex(shift + halt.pause.s * 0.5, halt.pause.s);
+        vertex(shift + halt.pause.s * 0.5, 0);
+        vertex(shift + halt.pause.s * 0.2, halt.pause.s * 0.3);
+        vertex(shift, halt.pause.s * 0.3);
+        endShape(CLOSE);
         pop();
         push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
@@ -529,7 +544,7 @@ function showScore(sc, lv, p) {
     strokeWeight(1);
     fill(255, 180, 0).textSize(height * 5 / 76);
     text('Score : ' + sc, width / 20, height * 18 / 20);
-    sc = round(frameCount / 50);
+    sc = round((frameCount - scoreFilter) / 50);
     if(sc != 0 && sc % 10 === 0 && floor(sc/10) > lv-1)
         levelChange(++lv, p);
     pop();
@@ -547,11 +562,7 @@ function showHealthBar(hl, tA) {
     rect(h, h, map(hl, 0, 100, 0, w), h);
     fill(255).strokeWeight(3);
     textFont(bcr, h);
-
-    if(frameCount%10 === 0)
-        fr=int(frameRate());
-    text(/*"HEALTH"*/fr, h + w / 2, h + height / 100);
-
+    text("HEALTH", h + w / 2, h + height / 100);
     if(hl <= 0.5 && screen != 6) {
         screen = 6;
         tA = 0;
