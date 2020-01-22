@@ -22,7 +22,6 @@ let scoreFilter;
 
 function preload(){
     //theme song
-    //song = loadSound('./sound/TheOcean.mp3');
     song = loadSound('./sound/LifeIsMusic.mp3');
     //Cover Image
     cover = loadImage('./images/JetSkii.png');
@@ -32,16 +31,10 @@ function preload(){
     ocean = loadImage('./images/Ocean.png');
     //Jet (main object)
     rider = loadImage('./images/jet.gif');
-    //sound On image
-    //sOn = loadImage('./images/soundOn.png');
-    //sound Off image
-    //sOff = loadImage('./images/soundOff.png');
-    //background tree image
-    //tree = loadImage('./images/tree.png');
-    //font load
+    //fonts
     bcr = loadFont('./assets/BalooChettan-Regular.ttf');
     sso = loadFont('./assets/SonsieOne.ttf');
-
+    sbl = loadFont('./assets/Schoolbell.ttf');
 }
 
 function setup(){
@@ -77,11 +70,9 @@ function setup(){
     ellipseMode(CENTER);
     textAlign(CENTER, CENTER);
 
-    //sound setting
-    //getAudioContext().resume();
     //sound mode setting
     song.playMode('restart');
-    //sound start
+    //sound paused by default
     song.pause();
 
     //setting game properties
@@ -151,7 +142,7 @@ function setup(){
 
 function draw() {
 
-    if(!focused && screen != 6){
+    if(!focused && screen == 4){
         screen = 5;
         noLoop();
     }
@@ -173,7 +164,9 @@ function draw() {
             jet.x = constrain(jet.x - move, boundary.left, boundary.right);
         else if (keyIsDown(RIGHT_ARROW))
             jet.x = constrain(jet.x + move, boundary.left, boundary.right);
-    } else if(screen == 6 && jet.x > -jet.width/2){
+    }
+    //tossing the rider onto the ocean when game is over
+    else if(screen == 6 && jet.x > -jet.width/2){
         drag = 0;
         jet.x -= res / 1.5;
         jet.y = lerp(jet.y, height, 0.05);
@@ -267,6 +260,21 @@ function mousePressed() {
     } else if(cond && screen==1){
         screen=3;
         loop();
+    } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share",0,0,height/12).w - width/30 && mouseY >= halt.pause.y*18 && mouseX <= halt.pause.x + halt.pause.s && mouseY <= halt.pause.y*18 + halt.pause.s){
+        //change canvas' look to sharable image here
+        document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
+        if (navigator.canShare) {
+            await navigator.share({
+                files: [new File([blob], 'score.jpeg', {type:'image/jpeg'})],
+                title: 'My Score',
+                text: 'Beat my Score !',
+                url: 'https://ahmedazhar05.github.io/JetSkii',
+            })
+            .then(() => {})
+            .catch((error) => {});
+        } else 
+            saveCanvas('JetSKii','jpeg');
+      },'image/jpeg',0.5);
     }
     return false;
 }
@@ -292,11 +300,12 @@ function slideJet(j, td, wv) {
         j.x = j.x + res / 10;
         wp = abs(floor(j.x / res));
         j.y = wv[wp] - td / 2;
-        if(j.x >= width / 2)
-            screen=4
+        if(j.x >= width / 2){
+            screen=4;
+            scoreFilter = frameCount;
+        }
     } else {
         wp = floor(j.x / res);
-
         if(screen == 4){
         //for smooth bounce
             const newY = wv[wp] - td/2;
@@ -517,22 +526,40 @@ function showState(halt, bg) {
         bg = lerp(bg, 150, 0.05);
         if(bg >= 135){
             bg = 150;
+            push();
+            textAlign(CENTER, CENTER);
+            //Content
+            textFont(sbl, height/10).fill(0);
+            text("\nRUDY DROWNED !",width/2, height/3);
+            //Score
             textFont(bcr, height/7.5);
-            text("RUDY\nDROWNED !\nScore : "+score,width/2, height*2/3);
-            textFont(sso, width/6);
-            strokeWeight(10);
-            fill(184,77,97);//pinkish red
-            stroke(37,50,85);//dark blue
+            text("\nScore",width/3, height/2);
+            textFont(sso, height/7.5).strokeWeight(10).fill(255, 175, 0)/*yellow*/.stroke(255, 75, 0)/*orange*/;
+            text("\n"+score, width*3/4, height/2);
+            //Game Title
+            textFont(sso, height/6).strokeWeight(10).fill(184,77,97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
             text("JetSkii",width/2, height/6);
+            //'Share' Text
+            translate(halt.pause.x, halt.pause.y*18);
+            fill(33, 128, 124).noStroke().textFont(bcr, height/12);
+            const shareBox = bcr.textBounds("Share", 0, 0, height/12);
+            text("Share", -shareBox.w/2 - width/30, shareBox.h/4);
+            //Share Icon at bottom right corner
+            strokeWeight(10).stroke(33, 128, 124);
+            line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s/8);
+            line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s*7/8);
+            strokeWeight(1);
+            circle(halt.pause.s*7/8, halt.pause.s/8 ,halt.pause.s/2);
+            circle(halt.pause.s/8, halt.pause.s/2 ,halt.pause.s/2);
+            circle(halt.pause.s*7/8, halt.pause.s*7/8 ,halt.pause.s/2);
+            pop();
         }
     } else if (screen == 1) {
         //START Screen Setting
         background(cover);
-        textFont(sso, width/6);
-        strokeWeight(10);
-        fill(184,77,97);//pinkish red
-        stroke(37,50,85);//dark blue
+        textFont(sso, width/6).strokeWeight(10).fill(184,77,97)/*pinkish red*/.stroke(37,50,85);//dark blue
         text("JetSkii",width/2, height/6);
+        strokeWeight(1);
         noLoop();
     }
     return bg;
