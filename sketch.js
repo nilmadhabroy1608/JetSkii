@@ -260,7 +260,7 @@ function mousePressed() {
     } else if(cond && screen==1){
         screen=3;
         loop();
-    } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share",0,0,height/12).w - width/30 && mouseY >= halt.pause.y*18 && mouseX <= halt.pause.x + halt.pause.s && mouseY <= halt.pause.y*18 + halt.pause.s){
+    } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share",0,0,height/12).w - width/30 && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
         //change canvas' look to sharable image here
         document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
         if (navigator.canShare) {
@@ -275,6 +275,10 @@ function mousePressed() {
         } else 
             saveCanvas('JetSKii','jpeg');
       },'image/jpeg',0.5);
+    } else if(bg == 150 && screen == 6 && mouseX >= width/20 && mouseX <= width/20 + bcr.textBounds("Credits",0,0,height/12).w && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
+        bg = 151;
+    } else if(bg == 151 && screen == 6 && cond){
+        bg = 150;
     }
     return false;
 }
@@ -459,8 +463,8 @@ function updateMeteor(index, p){
 
 function createWave(wv, el) {
     noStroke();
-    //fill(color(151, 221, 223, 200));
-    fill(color(50,157,202, 200));
+    //fill(151, 221, 223, 200);
+    fill(50,157,202, 200);
 
     //displaying surface waves pattern
     beginShape();
@@ -523,27 +527,34 @@ function showState(halt, bg) {
         push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
         background(255, bg);
-        bg = lerp(bg, 150, 0.05);
-        if(bg >= 135){
+        bg = lerp(bg, 151, 0.05);
+        if(bg >= 135 && bg < 151){
             bg = 150;
             push();
             textAlign(CENTER, CENTER);
             //Content
-            textFont(sbl, height/10).fill(0);
+            textFont(sbl, height/15).fill(0);
             text("\nRUDY DROWNED !",width/2, height/3);
             //Score
-            textFont(bcr, height/7.5);
-            text("\nScore",width/3, height/2);
-            textFont(sso, height/7.5).strokeWeight(10).fill(255, 175, 0)/*yellow*/.stroke(255, 75, 0)/*orange*/;
-            text("\n"+score, width*3/4, height/2);
+            textFont(bcr, height/7.5).fill(50, 157, 202);//fill(0, 161, 211);
+            text("Score",width/3, height/2);
+            textFont(sso, height/7.5).fill(255, 175, 0)/*yellow*/.noStroke();//.stroke(255, 75, 0)/*orange*/.strokeWeight(10);
+            text(score, width*3/4, height/2);
             //Game Title
-            textFont(sso, height/6).strokeWeight(10).fill(184,77,97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
+            textFont(sso, height/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
+            fill(20,56,132);//dark blue
+            stroke(255,185,0);//yellow
             text("JetSkii",width/2, height/6);
+
+            textAlign(LEFT);
+            const shareBox = bcr.textBounds("Share", 0, 0, height/12);
+            //Play Again
+            fill(255).noStroke().textFont(bcr, height/12);
+            text("Credits", width/20, halt.pause.y*18 + shareBox.h/4);
             //'Share' Text
             translate(halt.pause.x, halt.pause.y*18);
-            fill(33, 128, 124).noStroke().textFont(bcr, height/12);
-            const shareBox = bcr.textBounds("Share", 0, 0, height/12);
-            text("Share", -shareBox.w/2 - width/30, shareBox.h/4);
+            fill(33, 128, 124);//dark green
+            text("Share", -shareBox.w - width/30, shareBox.h/4);
             //Share Icon at bottom right corner
             strokeWeight(10).stroke(33, 128, 124);
             line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s/8);
@@ -553,11 +564,26 @@ function showState(halt, bg) {
             circle(halt.pause.s/8, halt.pause.s/2 ,halt.pause.s/2);
             circle(halt.pause.s*7/8, halt.pause.s*7/8 ,halt.pause.s/2);
             pop();
+        } else if(bg == 151){
+            push();
+            //Game Title
+            textFont(sso, height/6).strokeWeight(10).fill(20,56,132).stroke(255,185,0);
+            text("JetSkii",width/2, height/6);
+            noStroke().textFont(bcr, height/20);
+            fill(33, 128, 124);
+            textAlign(LEFT);
+            text("Created By\n\nJavascript\nLibrary\nMusic\n\nLogo Font\nThanks to\n\n\n",width/8, height*2/3);
+            fill(184, 62, 98);
+            textAlign(RIGHT);
+            text("Mohammed\nAzhar Ahmed\np5js.org\n\n'Life is Music' by\nRudy Mancuso\nSonsie One\nDaniel\nShiffman from\nthecodingtrain.com\n",width*7/8, height*2/3);
+            pop();
         }
     } else if (screen == 1) {
         //START Screen Setting
         background(cover);
-        textFont(sso, width/6).strokeWeight(10).fill(184,77,97)/*pinkish red*/.stroke(37,50,85);//dark blue
+        textFont(sso, width/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);//dark blue
+        fill(20,56,132);//dark blue
+        stroke(255,185,0);//yellow
         text("JetSkii",width/2, height/6);
         strokeWeight(1);
         noLoop();
@@ -568,11 +594,8 @@ function showState(halt, bg) {
 
 function showScore(sc, lv, p) {
     push();
-    noStroke();
     textAlign(LEFT, CENTER);
-    textFont(bcr);
-    strokeWeight(1);
-    fill(255, 180, 0).textSize(height * 5 / 76);
+    fill(255, 180, 0).textFont(bcr, height/12).noStroke();//.textSize(height* 5 / 76);
     text('Score : ' + sc, width / 20, height * 18 / 20);
     sc = round((frameCount - scoreFilter) / 50);
     if(sc != 0 && sc % 10 === 0 && floor(sc/10) > lv-1)
