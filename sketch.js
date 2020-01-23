@@ -624,17 +624,6 @@ function showState(sc, halt, bg) {
         fill(20,56,132);//dark blue
         stroke(255,185,0);//yellow
         text("JetSkii",width/2, height/6);
-
-
-
-        // textFont(bcr, height/5);
-        // line(0, height*21/30, width, height*21/30);
-        // const replay=bcr.textBounds("PLAY",width/2,height*21/30,height/4);
-        // rect(replay.x,replay.y+height/60,replay.w,replay.h);
-        // text("PLAY", width/2, height*21/30);
-
-
-
         if(bg == 0)
             noLoop();
         else {
