@@ -33,8 +33,8 @@ function preload(){
     rider = loadImage('./images/jet.gif');
     //fonts
     bcr = loadFont('./assets/BalooChettan-Regular.ttf');
-    sso = loadFont('./assets/SonsieOne.ttf');
-    sbl = loadFont('./assets/Schoolbell.ttf');
+    sso = loadFont('./assets/SonsieOne-Regular.ttf');
+    sbl = loadFont('./assets/Schoolbell-Regular.ttf');
 }
 
 function setup(){
@@ -242,7 +242,8 @@ function mouseReleased() {
 }
 
 function mousePressed() {
-    cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
+    const replay = bcr.textBounds("PLAY", width/2, height*21/30, height/5);
+    const cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 4) {
         screen = 5;
         noLoop();
@@ -252,15 +253,14 @@ function mousePressed() {
         else
             song.loop();
         scoreFilter += 2;
-        loop();
-        noLoop();
+        redraw();
     } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 5){
         screen = 4;
         loop();
     } else if(cond && screen==1){
         screen=3;
         loop();
-    } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share",0,0,height/12).w - width/30 && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
+    } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share  ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
         //change canvas' look to sharable image here
         document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
         if (navigator.canShare) {
@@ -279,6 +279,8 @@ function mousePressed() {
         bg = 151;
     } else if(bg == 151 && screen == 6 && cond){
         bg = 150;
+    } else if(bg == 150 && screen == 6 && mouseX >= replay.x && mouseX <= replay.x + replay.w && mouseY >= replay.y && mouseY <= replay.y + replay.h){
+        setup();
     }
     return false;
 }
@@ -527,7 +529,6 @@ function showState(halt, bg) {
         push();
     } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
         background(255, bg);
-        bg = lerp(bg, 151, 0.05);
         if(bg >= 135 && bg < 151){
             bg = 150;
             push();
@@ -536,25 +537,31 @@ function showState(halt, bg) {
             textFont(sbl, height/15).fill(0);
             text("\nRUDY DROWNED !",width/2, height/3);
             //Score
-            textFont(bcr, height/7.5).fill(50, 157, 202);//fill(0, 161, 211);
-            text("Score",width/3, height/2);
-            textFont(sso, height/7.5).fill(255, 175, 0)/*yellow*/.noStroke();//.stroke(255, 75, 0)/*orange*/.strokeWeight(10);
+            textFont(sso, height/9).fill(50, 157, 202).noStroke();//fill(0, 161, 211);
+            text("score",width/3, height*19/36);
+            textFont(bcr, height/5).fill(255, 175, 0);///*yellow*/.noStroke();//.stroke(255, 75, 0)/*orange*/.strokeWeight(10);
             text(score, width*3/4, height/2);
+            //Play Button
+            fill(184, 62, 98);
+            text("PLAY", width/2, height*21/30);
             //Game Title
             textFont(sso, height/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
             fill(20,56,132);//dark blue
             stroke(255,185,0);//yellow
             text("JetSkii",width/2, height/6);
-
+            // │ ┤ ┐ └ ┴ ┬ ├ ─ ┼ ┘ ┌ ¯ _
+            // ┌────┐
+            // │PLAY│
+            // └────┘
             textAlign(LEFT);
-            const shareBox = bcr.textBounds("Share", 0, 0, height/12);
+            const shareBox = bcr.textBounds("Share  ", 0, 0, height/12);
             //Play Again
             fill(255).noStroke().textFont(bcr, height/12);
             text("Credits", width/20, halt.pause.y*18 + shareBox.h/4);
             //'Share' Text
             translate(halt.pause.x, halt.pause.y*18);
             fill(33, 128, 124);//dark green
-            text("Share", -shareBox.w - width/30, shareBox.h/4);
+            text("Share", -shareBox.w, shareBox.h/4);
             //Share Icon at bottom right corner
             strokeWeight(10).stroke(33, 128, 124);
             line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s/8);
@@ -572,12 +579,13 @@ function showState(halt, bg) {
             noStroke().textFont(bcr, height/20);
             fill(33, 128, 124);
             textAlign(LEFT);
-            text("Created By\n\nJavascript\nLibrary\nMusic\n\nLogo Font\nThanks to\n\n\n",width/8, height*2/3);
+            text("Created By\n\nJavascript\nLibrary\nMusic\n\nLogo Font\nSpecial\nthanks to\n\n",width/8, height*2/3);
             fill(184, 62, 98);
             textAlign(RIGHT);
             text("Mohammed\nAzhar Ahmed\np5js.org\n\n'Life is Music' by\nRudy Mancuso\nSonsie One\nDaniel\nShiffman from\nthecodingtrain.com\n",width*7/8, height*2/3);
             pop();
-        }
+        } else
+            bg = lerp(bg, 150, 0.05);
     } else if (screen == 1) {
         //START Screen Setting
         background(cover);
@@ -595,7 +603,7 @@ function showState(halt, bg) {
 function showScore(sc, lv, p) {
     push();
     textAlign(LEFT, CENTER);
-    fill(255, 180, 0).textFont(bcr, height/12).noStroke();//.textSize(height* 5 / 76);
+    fill(255, 180, 0).textFont(bcr, height/15).noStroke();//.textSize(height* 5 / 76);
     text('Score : ' + sc, width / 20, height * 18 / 20);
     sc = round((frameCount - scoreFilter) / 50);
     if(sc != 0 && sc % 10 === 0 && floor(sc/10) > lv-1)
@@ -611,10 +619,9 @@ function showHealthBar(hl, tA) {
     const w = width/3;
     rect(h, h, w, h);
     hl = lerp(hl, dec, 0.2);
-    fill((100 - hl)*255/100, hl*255/100, 0);
+    fill((100 - hl)*255/100, hl*255/100, 0).noStroke();
     rect(h, h, map(hl, 0, 100, 0, w), h);
-    fill(255).strokeWeight(3);
-    textFont(bcr, h);
+    fill(255).strokeWeight(3).stroke(0).textFont(bcr, h);
     text("HEALTH", h + w / 2, h + height / 100);
     if(hl <= 0.5 && screen != 6) {
         screen = 6;
