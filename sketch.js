@@ -207,19 +207,19 @@ function draw() {
     //WAVE
     createWave(waves, prop.elev);
 
-    if (screen==3) {
-        let h=height/8;
+    if (screen == 3) {
+        let h = height/8;
         push();
         rectMode(CORNERS);
         if(jet.x > width/4)
-            h=map(jet.x, width/4, width/2, height/8, 0);
+            h = map(jet.x, width/4, width/2, height/8, 0);
         fill(0);
-        rect(0,0,width, h);
-        rect(0,height - h,width, height);
+        rect(0, 0, width, h);
+        rect(0, height - h, width, height);
         pop();
     } else {
         //To Various SCREEN States
-        bg = showState(halt, bg);
+        bg = showState(screen, halt, bg);
         if (screen==4 || screen==5) {
             //SCORE
             const r = showScore(score, curLevel, prop);
@@ -242,7 +242,7 @@ function mouseReleased() {
 }
 
 function mousePressed() {
-    const replay = bcr.textBounds("PLAY", width/2, height*21/30, height/5);
+    const replay = bcr.textBounds("PLAY", width/2, height*21/30, height/4);
     const cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 4) {
         screen = 5;
@@ -261,27 +261,28 @@ function mousePressed() {
         screen=3;
         loop();
     } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share  ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
-        //change canvas' look to sharable image here
         document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
-        if (navigator.canShare) {
-            await navigator.share({
-                files: [new File([blob], 'score.jpeg', {type:'image/jpeg'})],
-                title: 'My Score',
-                text: 'Beat my Score !',
-                url: 'https://ahmedazhar05.github.io/JetSkii',
-            })
-            .then(() => {})
-            .catch((error) => {});
-        } else 
-            saveCanvas('JetSKii','jpeg');
-      },'image/jpeg',0.5);
-    } else if(bg == 150 && screen == 6 && mouseX >= width/20 && mouseX <= width/20 + bcr.textBounds("Credits",0,0,height/12).w && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
-        bg = 151;
-    } else if(bg == 151 && screen == 6 && cond){
-        bg = 150;
-    } else if(bg == 150 && screen == 6 && mouseX >= replay.x && mouseX <= replay.x + replay.w && mouseY >= replay.y && mouseY <= replay.y + replay.h){
+            screen = 1;
+            redraw();
+            if (navigator.canShare) {
+                await navigator.share({
+                    files: [new File([blob], 'JetSkii.jpeg', {type:'image/jpeg'})],
+                    title: 'My Score',
+                    text: 'Beat my Score !',
+                    url: 'https://ahmedazhar05.github.io/JetSkii',
+                })
+                .then(() => {})
+                .catch((error) => {});
+            } else 
+                saveCanvas('JetSkii','jpeg');
+            screen = 6;
+        },'image/jpeg',0.5);
+    } else if(bg == 150 && screen == 6 && mouseX >= replay.x && mouseX <= replay.x + replay.w && mouseY >= replay.y + height/10 && mouseY <= replay.y + height/10 + replay.h)
         setup();
-    }
+    else if(bg == 150 && screen == 6 && mouseX >= width/20 && mouseX <= width/20 + bcr.textBounds("Credits", 0, 0, height/12).w && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s)
+        bg = 151;
+    else if(bg == 151 && screen == 6 && cond)
+        bg = 150;
     return false;
 }
 
@@ -296,7 +297,38 @@ function keyPressed() {
         } else if (screen == 1) {
             screen = 3;
             loop();
+        } else if (screen == 6 && bg == 151)
+            bg = 150;
+        else if (screen == 6 && bg == 150)
+            setup();
+    } else if (screen == 6 && keyCode == 67)//key 'C'
+        bg = 151;
+    else if ((screen == 4 || screen == 5) && keyCode == 83){//key 'S'
+        if(song.isLooping() || song.isPlaying())
+            song.pause();
+        else
+            song.loop();
+        if (screen == 5){
+            scoreFilter += 2;
+            redraw();
         }
+    } else if (screen == 6 && bg == 150 && keyCode == 69){//key 'E'
+        document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
+            screen = 1;
+            redraw();
+            if (navigator.canShare) {
+                await navigator.share({
+                    files: [new File([blob], 'score.jpeg', {type:'image/jpeg'})],
+                    title: 'My Score',
+                    text: 'Beat my Score !',
+                    url: 'https://ahmedazhar05.github.io/JetSkii',
+                })
+                .then(() => {})
+                .catch((error) => {});
+            } else 
+                saveCanvas('JetSkii','jpeg');
+            screen = 6;
+        },'image/jpeg',0.5);
     }
 }
 
@@ -490,17 +522,17 @@ function updateWave(p, wv){
     }
 }
 
-function showState(halt, bg) {
+function showState(sc, halt, bg) {
     fill(255, 128, 0);  //orange color
     stroke(0);
-    if (screen == 4) {
+    if (sc == 4) {
         //show PAUSE button
         push();
         translate(halt.pause.x, halt.pause.y);
         rect(0, 0, halt.pause.s / 3, halt.pause.s);
         rect(halt.pause.s * 2 / 3, 0, halt.pause.s / 3, halt.pause.s);
         pop();
-    } else if (screen == 5) {
+    } else if (sc == 5) {
         //show PLAY button
         push();
         background(0, 200);
@@ -526,8 +558,7 @@ function showState(halt, bg) {
         rect(shift, halt.pause.s * 0.3, halt.pause.s * 0.2, halt.pause.s * 0.4);
         triangle(shift, halt.pause.s/2, shift + halt.pause.s * 0.5, 0, shift + halt.pause.s * 0.5, halt.pause.s);
         pop();
-        push();
-    } else if (screen == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
+    } else if (sc == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
         background(255, bg);
         if(bg >= 135 && bg < 151){
             bg = 150;
@@ -549,10 +580,6 @@ function showState(halt, bg) {
             fill(20,56,132);//dark blue
             stroke(255,185,0);//yellow
             text("JetSkii",width/2, height/6);
-            // │ ┤ ┐ └ ┴ ┬ ├ ─ ┼ ┘ ┌ ¯ _
-            // ┌────┐
-            // │PLAY│
-            // └────┘
             textAlign(LEFT);
             const shareBox = bcr.textBounds("Share  ", 0, 0, height/12);
             //Play Again
@@ -566,10 +593,10 @@ function showState(halt, bg) {
             strokeWeight(10).stroke(33, 128, 124);
             line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s/8);
             line(halt.pause.s/8, halt.pause.s/2, halt.pause.s*7/8, halt.pause.s*7/8);
-            strokeWeight(1);
-            circle(halt.pause.s*7/8, halt.pause.s/8 ,halt.pause.s/2);
-            circle(halt.pause.s/8, halt.pause.s/2 ,halt.pause.s/2);
-            circle(halt.pause.s*7/8, halt.pause.s*7/8 ,halt.pause.s/2);
+            noStroke();
+            circle(halt.pause.s*7/8, halt.pause.s/8, halt.pause.s/2);
+            circle(halt.pause.s/8, halt.pause.s/2, halt.pause.s/2);
+            circle(halt.pause.s*7/8, halt.pause.s*7/8, halt.pause.s/2);
             pop();
         } else if(bg == 151){
             push();
@@ -586,15 +613,43 @@ function showState(halt, bg) {
             pop();
         } else
             bg = lerp(bg, 150, 0.05);
-    } else if (screen == 1) {
-        //START Screen Setting
-        background(cover);
-        textFont(sso, width/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);//dark blue
+    } else if (sc == 1) {
+        //START Screen Background
+        push();
+        if(bg == 0)
+            background(cover);
+        else
+            background(255, bg);
+        textFont(sso, height/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);//dark blue
         fill(20,56,132);//dark blue
         stroke(255,185,0);//yellow
         text("JetSkii",width/2, height/6);
-        strokeWeight(1);
-        noLoop();
+
+
+
+        // textFont(bcr, height/5);
+        // line(0, height*21/30, width, height*21/30);
+        // const replay=bcr.textBounds("PLAY",width/2,height*21/30,height/4);
+        // rect(replay.x,replay.y+height/60,replay.w,replay.h);
+        // text("PLAY", width/2, height*21/30);
+
+
+
+        if(bg == 0)
+            noLoop();
+        else {
+            noStroke();
+            textAlign(CENTER, CENTER);
+            //Content
+            textFont(sbl, height/15).fill(0);
+            text("\nRUDY DROWNED !",width/2, height/3);
+            //Score
+            textFont(sso, height/10).fill(50, 157, 202).noStroke();
+            text("score",width/2, height/2);
+            textFont(bcr, height/3).fill(255, 175, 0);
+            text(score, width/2, height*2/3);
+        }
+        pop();
     }
     return bg;
     //use switch case instead of if-else after replacing screen values with numbers
