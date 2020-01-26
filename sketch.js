@@ -570,13 +570,13 @@ function showState(sc, halt, bg) {
             //Score
             textFont(sso, height/9).fill(50, 157, 202).noStroke();//fill(0, 161, 211);
             text("score",width/3, height*19/36);
-            textFont(bcr, height/5).fill(255, 175, 0);///*yellow*/.noStroke();//.stroke(255, 75, 0)/*orange*/.strokeWeight(10);
+            textFont(bcr, height/5).fill(255, 175, 0).stroke(255, 100, 0).strokeWeight(5);///*yellow*/.noStroke();//.stroke(255, 75, 0)/*orange*/.strokeWeight(10);
             text(score, width*3/4, height/2);
             //Play Button
-            fill(184, 62, 98);
+            fill(184, 62, 98).noStroke();
             text("PLAY", width/2, height*21/30);
             //Game Title
-            textFont(sso, height/6).strokeWeight(10);//.fill(184,77,97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
+            textFont(sso, height/6).strokeWeight(10);//.fill(184, 77, 97)/*pinkish red*/.stroke(37,50,85);/*dark blue*/
             fill(20,56,132);//dark blue
             stroke(255,185,0);//yellow
             text("JetSkii",width/2, height/6);
@@ -603,7 +603,7 @@ function showState(sc, halt, bg) {
             //Game Title
             textFont(sso, height/6).strokeWeight(10).fill(20,56,132).stroke(255,185,0);
             text("JetSkii",width/2, height/6);
-            noStroke().textFont(bcr, height/20);
+            noStroke().textFont(bcr, height/22);
             fill(33, 128, 124);
             textAlign(LEFT);
             text("Created By\n\nJavascript\nLibrary\nMusic\n\nLogo Font\nSpecial\nthanks to\n\n",width/8, height*2/3);
@@ -635,7 +635,7 @@ function showState(sc, halt, bg) {
             //Score
             textFont(sso, height/10).fill(50, 157, 202).noStroke();
             text("score",width/2, height/2);
-            textFont(bcr, height/3).fill(255, 175, 0);
+            textFont(bcr, height/3).fill(255, 175, 0).stroke(/*255, 100, 0*/255, 70, 0).strokeWeight(15);
             text(score, width/2, height*2/3);
         }
         pop();
@@ -717,6 +717,5 @@ function levelChange(lev, p, fire){
 }
 
 //change jet.gif
-//better levelChange(lev) function
-//adding REPLAY and SHARE/SAVE button
-//gradual meteor speed increase
+//Set OceanFloor as well
+//better SHARE/SAVE image
