@@ -19,6 +19,7 @@ let ind;
 let bg;
 let cond;
 let scoreFilter;
+let oceanFloor;
 
 function preload(){
     //theme song
@@ -73,7 +74,7 @@ function setup(){
     //sound mode setting
     song.playMode('restart');
     //sound paused by default
-    song.pause();
+    song.stop();
 
     //setting game properties
     prop = {
@@ -138,6 +139,19 @@ function setup(){
     tossAngle = 0;
 
     bg = 0;
+
+    oceanFloor = [];
+    //ocean floor
+    if(pixelDensity() > 1){
+        const surf = color(50, 157, 202, 200);
+        const flor = color(32, 100, 129, 255);//floor color
+        for (let i = prop.elev,inc = res / 2; i <= height; i += inc) {
+            oceanFloor.push({
+                col : lerpColor(surf, flor, map(i, prop.elev, height, 0, 1)),
+                val : i,
+            });
+        }
+    }
 }
 
 function draw() {
@@ -261,9 +275,10 @@ function mousePressed() {
         screen=3;
         loop();
     } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share  ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
+        screen = 1;
+        noLoop();
+        redraw();
         document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
-            screen = 1;
-            redraw();
             if (navigator.canShare) {
                 await navigator.share({
                     files: [new File([blob], 'JetSkii.jpeg', {type:'image/jpeg'})],
@@ -271,12 +286,12 @@ function mousePressed() {
                     text: 'Beat my Score !',
                     url: 'https://ahmedazhar05.github.io/JetSkii',
                 })
-                .then(() => {})
-                .catch((error) => {});
-            } else 
-                saveCanvas('JetSkii','jpeg');
-            screen = 6;
+                .then(loop(), loop());
+            } else {
+              const file = loadImage(URL.createObjectURL(blob), (file)=>{file.save('JetSkii','jpeg');loop()});
+            }
         },'image/jpeg',0.5);
+        screen = 6;
     } else if(bg == 150 && screen == 6 && mouseX >= replay.x && mouseX <= replay.x + replay.w && mouseY >= replay.y + height/10 && mouseY <= replay.y + height/10 + replay.h)
         setup();
     else if(bg == 150 && screen == 6 && mouseX >= width/20 && mouseX <= width/20 + bcr.textBounds("Credits", 0, 0, height/12).w && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s)
@@ -313,22 +328,23 @@ function keyPressed() {
             redraw();
         }
     } else if (screen == 6 && bg == 150 && keyCode == 69){//key 'E'
+        screen = 1;
+        noLoop();
+        redraw();
         document.querySelector('canvas#defaultCanvas0').toBlob(async (blob)=>{
-            screen = 1;
-            redraw();
             if (navigator.canShare) {
                 await navigator.share({
-                    files: [new File([blob], 'score.jpeg', {type:'image/jpeg'})],
+                    files: [new File([blob], 'JetSkii.jpeg', {type:'image/jpeg'})],
                     title: 'My Score',
                     text: 'Beat my Score !',
                     url: 'https://ahmedazhar05.github.io/JetSkii',
                 })
-                .then(() => {})
-                .catch((error) => {});
-            } else 
-                saveCanvas('JetSkii','jpeg');
-            screen = 6;
+                .then(loop(), loop());
+            } else{
+              const file = loadImage(URL.createObjectURL(blob), (file)=>{file.save('JetSkii','jpeg'); loop()});
+            }
         },'image/jpeg',0.5);
+        screen = 6;
     }
 }
 
@@ -491,7 +507,8 @@ function updateMeteor(index, p){
     //create new ones when a meteor drowns or goes out of the visible area
     if((m.y - m.r) > (p.elev + p.tide * 1.5) || (m.x + m.r) < 0){
         meteors.splice(index, 1);
-        addMeteor(index, p.meteorSize, p.meteorSpeed);
+        if (meteors.length < prop.numMeteors)
+            addMeteor(index, p.meteorSize, p.meteorSpeed);
     }
 }
 
@@ -508,7 +525,14 @@ function createWave(wv, el) {
     vertex(width, el);
     endShape(CLOSE);
 
-    image(ocean, 0, el, width, height - el);
+    if (!oceanFloor.length)
+        image(ocean, 0, el, width, height - el);
+    else {
+        for (let i = 0, inc = res / 2; i < oceanFloor.length; i++) {
+            fill(oceanFloor[i].col);
+            rect(0, oceanFloor[i].val, width, inc);
+        }
+    }
 }
 
 function updateWave(p, wv){
@@ -669,6 +693,8 @@ function showHealthBar(hl, tA) {
     text("HEALTH", h + w / 2, h + height / 100);
     if(hl <= 0.5 && screen != 6) {
         screen = 6;
+        if (pixelDensity() > 1)
+            prop.numMeteors = 1;
         tA = 0;
     }
     strokeWeight(1);
@@ -715,7 +741,3 @@ function levelChange(lev, p, fire){
             break;
     }
 }
-
-//change jet.gif
-//Set OceanFloor as well
-//better SHARE/SAVE image
