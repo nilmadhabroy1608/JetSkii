@@ -96,7 +96,7 @@ function setup(){
     }
 
     curLevel = 0;
-    score = 1;
+    score = 0;
     scoreFilter = 0;
 
     jet = {
@@ -105,7 +105,7 @@ function setup(){
         speed: width / 60,
     };
     jet.x = - jet.width / 2;
-    jet.y = prop.elev - jet.tide / 2;
+    jet.y = prop.elev - prop.tide / 2;
     rider.pause();
     rider.setFrame(0);
     rider.delay(100);
@@ -209,7 +209,7 @@ function draw() {
 
             if (meteors.length < prop.numMeteors)
                 addMeteor(0, prop.meteorSize, prop.meteorSpeed);
-            if (screen != 5)
+            if (screen != 5 && screen != 2)
                 updateMeteor(i, prop);
         }
     }
@@ -272,8 +272,41 @@ function mousePressed() {
         screen = 4;
         loop();
     } else if(cond && screen==1){
-        screen=3;
+        screen = 2;
+        //single demo meteor initialization
+        const temp = [];
+        for(let i = 0; i < 360; i += res){
+            const cons = 20 * (1 + noise(nOff) / 2); //Rock Disfiguration
+            temp.push({
+                x : cons * cos(i),
+                y : cons * sin(i),
+            });
+            nOff++;
+        }
+        //single demo meteor addition
+        meteors.splice(0, 0, {
+            x: width*7/10,
+            y: height*3/10,
+            r: 20,
+            c: false,
+            d: false,
+            pts : temp,
+            ang : 360,
+            sp : 0,
+        });
+        bg = 130;
+        jet.x = int(waves.length/2)*res;
+        jet.y = waves[jet.x/res] - prop.tide/2;
+        redraw();
+    }/* else if (screen == 2 /*&& if skip button clicked/) {
+        screen = 3;
+        jet.x = -jet.width/2;
+        jet.y = prop.elev - prop.tide/2;
+        meteor.splice(0, 1);
         loop();
+    }*/ else if(cond && screen == 2){
+        ++bg;
+        redraw();
     } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share  ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
         screen = 1;
         noLoop();
@@ -581,6 +614,49 @@ function showState(sc, halt, bg) {
         noStroke();
         rect(shift, halt.pause.s * 0.3, halt.pause.s * 0.2, halt.pause.s * 0.4);
         triangle(shift, halt.pause.s/2, shift + halt.pause.s * 0.5, 0, shift + halt.pause.s * 0.5, halt.pause.s);
+        pop();
+    } else if(sc == 2){
+        //help rudy reach as far possible as his health deteriorates
+        push();
+        textAlign(CENTER, CENTER);
+        textFont(bcr, height/15).stroke(0).strokeWeight(2).fill(255, 128, 0);
+        switch(bg){
+            case 130:
+                background(0, bg);
+                text("This is Rudy", width/2, height/2);
+                displayJet(jet, jet.x/res, waves, 0);
+                break;
+            case 131:
+                displayJet(jet, jet.x/res, waves, 0);
+                background(0, bg);
+                displayMeteor(meteors[0], res * 5 * ((pixelDensity() > 1)?2:1) / 25, height*3/4, fireLines, ind);
+                text("He needs to dodge Meteors and reach his destination...", width/10, height/10, width/2, height/2);
+                break;
+            case 132:
+                displayJet(jet, jet.x/res, waves, 0);
+                displayMeteor(meteors[0], res * 5 * ((pixelDensity() > 1)?2:1) / 25, height*3/4, fireLines, ind);
+                background(0, bg);
+                text("before his Health deteriorates and he dies", width/40, height/40, width/2, height/2);
+                showHealthBar(100, 0);
+                break;
+            default:
+                bg = 0;
+                screen = 3;
+                jet.x = -jet.width/2;
+                jet.y = prop.elev - prop.tide/2;
+                meteors.splice(0, 1);
+                loop();
+        }
+        //'Skip' Text
+        noStroke();
+        const skipBox = bcr.textBounds("Skip  ", 0, 0, height/12);
+        translate(halt.pause.x, halt.pause.y*18);
+        textFont(bcr, height/12);
+        fill(33, 128, 124);//dark green
+        text("Skip", -skipBox.w/2, skipBox.h/4);
+        //Skip Icon at bottom right corner
+        rect(halt.pause.s*3/4, 0, halt.pause.s/4, halt.pause.s);
+        triangle(0, 0, halt.pause.s*0.625, halt.pause.s/2, 0, halt.pause.s);
         pop();
     } else if (sc == 6 && jet.x < -jet.width/2) {//GAME OVER SCREEN
         background(255, bg);
