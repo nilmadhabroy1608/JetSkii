@@ -24,6 +24,9 @@ let oceanFloor;
 function preload(){
     //theme song
     song = loadSound('./sound/LifeIsMusic.mp3');
+    //misc sound files loading
+    jetmotor = loadSound('./sound/jet-water.mp3');
+    splash = loadSound('./sound/splash.mp3');
     //Cover Image
     cover = loadImage('./images/JetSkii.png');
     //cloudy background
@@ -73,8 +76,14 @@ function setup(){
 
     //sound mode setting
     song.playMode('restart');
-    //sound paused by default
+    jetmotor.playMode('restart');
+    splash.playMode('sustain');
+    //sounds paused by default
     song.stop();
+    jetmotor.setVolume(1);
+    jetmotor.pause();
+    splash.setVolume(0.3);
+    splash.stop();
 
     //setting game properties
     prop = {
@@ -260,16 +269,22 @@ function mousePressed() {
     const cond = mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height;
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 4) {
         screen = 5;
+        jetmotor.pause();
         noLoop();
-    } else if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 5) {
-        if(song.isLooping() || song.isPlaying())
+    } else if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && (screen == 5 || screen == 2)) {
+        if(song.isLooping() || song.isPlaying()){
             song.pause();
+            jetmotor.pause();
+            splash.pause();
+        }
         else
             song.loop();
         scoreFilter += 2;
         redraw();
     } else if(abs(mouseX - width/2) < halt.play.s/2 && abs(mouseY - height/2) < halt.play.s/2 && screen == 5){
         screen = 4;
+        if (song.isLooping() || song.isPlaying())
+            jetmotor.loop();
         loop();
     } else if(cond && screen==1){
         screen = 2;
@@ -298,14 +313,18 @@ function mousePressed() {
         jet.x = int(waves.length/2)*res;
         jet.y = waves[jet.x/res] - prop.tide/2;
         redraw();
-    }/* else if (screen == 2 /*&& if skip button clicked/) {
+    } else if (screen == 2 && mouseX >= halt.pause.x - bcr.textBounds("Skip ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s) {
         screen = 3;
+        bg = 0;
         jet.x = -jet.width/2;
         jet.y = prop.elev - prop.tide/2;
-        meteor.splice(0, 1);
+        meteors.splice(0, 1);
+        if (song.isLooping() || song.isPlaying())
+            jetmotor.loop();
         loop();
-    }*/ else if(cond && screen == 2){
+    } else if(cond && screen == 2){
         ++bg;
+        scoreFilter += 2;
         redraw();
     } else if(bg == 150 && screen == 6 && mouseX >= halt.pause.x - bcr.textBounds("Share  ",0,0,height/12).w && mouseX <= halt.pause.x + halt.pause.s && mouseY >= halt.pause.y*18 && mouseY <= halt.pause.y*18 + halt.pause.s){
         screen = 1;
@@ -338,24 +357,69 @@ function keyPressed() {
     if (key === ' ') {
         if (screen == 4) {
             screen = 5;
+            jetmotor.pause();
             noLoop();
         } else if (screen == 5) {
             screen = 4;
+            if (song.isLooping() || song.isPlaying())
+                jetmotor.loop();
             loop();
         } else if (screen == 1) {
-            screen = 3;
-            loop();
+            screen = 2;
+            //single demo meteor initialization
+            const temp = [];
+            for(let i = 0; i < 360; i += res){
+                const cons = 20 * (1 + noise(nOff) / 2); //Rock Disfiguration
+                temp.push({
+                    x : cons * cos(i),
+                    y : cons * sin(i),
+                });
+                nOff++;
+            }
+            //single demo meteor addition
+            meteors.splice(0, 0, {
+                x: width*7/10,
+                y: height*3/10,
+                r: 20,
+                c: false,
+                d: false,
+                pts : temp,
+                ang : 360,
+                sp : 0,
+            });
+            bg = 130;
+            jet.x = int(waves.length/2)*res;
+            jet.y = waves[jet.x/res] - prop.tide/2;
+            redraw();
+        } else if(screen == 2){
+            ++bg;
+            scoreFilter += 2;
+            redraw();
         } else if (screen == 6 && bg == 151)
-            bg = 150;
+                bg = 150;
         else if (screen == 6 && bg == 150)
             setup();
+    } else if (screen == 2 && keyCode == 75) {//key 'K'
+        screen = 3;
+        bg = 0;
+        jet.x = -jet.width/2;
+        jet.y = prop.elev - prop.tide/2;
+        meteors.splice(0, 1);
+        if (song.isLooping() || song.isPlaying())
+            jetmotor.loop();
+        loop();
     } else if (screen == 6 && keyCode == 67)//key 'C'
         bg = 151;
-    else if ((screen == 4 || screen == 5) && keyCode == 83){//key 'S'
-        if(song.isLooping() || song.isPlaying())
+    else if ((screen == 4 || screen == 5 || screen == 3) && keyCode == 83){//key 'S'
+        if(song.isLooping() || song.isPlaying()){
             song.pause();
-        else
+            jetmotor.pause();
+            splash.pause();
+        }
+        else{
             song.loop();
+            jetmotor.loop();
+        }
         if (screen == 5){
             scoreFilter += 2;
             redraw();
@@ -535,6 +599,8 @@ function updateMeteor(index, p){
         for(let j = low; j <= upp; j++)
             waves[j] -= waveHeight * (1 - cos(map(j, low, upp, 0, 360)));
         m.d = true;
+        if ((song.isPlaying() || song.isLooping()) && screen != 6)
+            splash.play();
     }
 
     //create new ones when a meteor drowns or goes out of the visible area
@@ -619,7 +685,7 @@ function showState(sc, halt, bg) {
         //help rudy reach as far possible as his health deteriorates
         push();
         textAlign(CENTER, CENTER);
-        textFont(bcr, height/15).stroke(0).strokeWeight(2).fill(255, 128, 0);
+        textFont(bcr, height/15).noStroke().fill(255, 175, 0);
         switch(bg){
             case 130:
                 background(0, bg);
@@ -630,27 +696,56 @@ function showState(sc, halt, bg) {
                 displayJet(jet, jet.x/res, waves, 0);
                 background(0, bg);
                 displayMeteor(meteors[0], res * 5 * ((pixelDensity() > 1)?2:1) / 25, height*3/4, fireLines, ind);
-                text("He needs to dodge Meteors and reach his destination...", width/10, height/10, width/2, height/2);
+                text("He needs to dodge Meteors and reach his destination..", width/10, height/10, width/2, height/2);
+                textSize(height/20);
+                fill(184, 77, 97);
+                text("Swipe to speed up\nor to slow down", width/2, height*75/90);
+                stroke(255)
+                const ctrl = bcr.textBounds("  Swipe to speed up  ", width/2, 0, height/20);
+                triangle(width/2 - jet.width*3/4, jet.y - halt.pause.s/2, width/2 - jet.width*3/4, jet.y + halt.pause.s/2, width/2 - jet.width*3/4 - halt.pause.s/2, jet.y);
+                triangle(width/2 + jet.width*3/4, jet.y - halt.pause.s/2, width/2 + jet.width*3/4, jet.y + halt.pause.s/2, width/2 + jet.width*3/4 + halt.pause.s/2, jet.y);
+                //triangle(width/2 - ctrl.w/2, height*8/10 - halt.pause.s/2, width/2 - ctrl.w/2, height*8/10 + halt.pause.s/2, width/2 - ctrl.w/2 - halt.pause.s/2, height*8/10);
+                //triangle(width/2 + ctrl.w/2, height*8/10 - halt.pause.s/2, width/2 + ctrl.w/2, height*8/10 + halt.pause.s/2, width/2 + ctrl.w/2 + halt.pause.s/2, height*8/10);
                 break;
             case 132:
                 displayJet(jet, jet.x/res, waves, 0);
                 displayMeteor(meteors[0], res * 5 * ((pixelDensity() > 1)?2:1) / 25, height*3/4, fireLines, ind);
                 background(0, bg);
-                text("before his Health deteriorates and he dies", width/40, height/40, width/2, height/2);
+                text("...before his Health deteriorates.", width/40, height/40, width/2, height/2);
                 showHealthBar(100, 0);
                 break;
             default:
                 bg = 0;
                 screen = 3;
+                if (song.isLooping() || song.isPlaying())
+                    jetmotor.loop();
                 jet.x = -jet.width/2;
                 jet.y = prop.elev - prop.tide/2;
                 meteors.splice(0, 1);
                 loop();
         }
         //'Skip' Text
+        translate(halt.pause.x, halt.pause.y);
+        let shift;
+        noFill().strokeWeight(5);
+        if(song.isLooping() || song.isPlaying()){
+            stroke(0, 255, 0);
+            shift = 0;
+            arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s, halt.pause.s, -45, 45);
+            arc(halt.pause.s*3/8, halt.pause.s/2, halt.pause.s/1.5, halt.pause.s/1.5, -45, 45);
+            fill(0, 255, 0);
+        } else {
+            stroke(255, 0, 0);
+            shift = halt.pause.s / 4;
+            line(shift/2, shift/2, halt.pause.s -shift/4, halt.pause.s -shift/4);
+            fill(255, 0, 0);
+        }
+        noStroke();
+        rect(shift, halt.pause.s * 0.3, halt.pause.s * 0.2, halt.pause.s * 0.4);
+        triangle(shift, halt.pause.s/2, shift + halt.pause.s * 0.5, 0, shift + halt.pause.s * 0.5, halt.pause.s);
         noStroke();
         const skipBox = bcr.textBounds("Skip  ", 0, 0, height/12);
-        translate(halt.pause.x, halt.pause.y*18);
+        translate(0, halt.pause.y*17);
         textFont(bcr, height/12);
         fill(33, 128, 124);//dark green
         text("Skip", -skipBox.w/2, skipBox.h/4);
@@ -817,3 +912,14 @@ function levelChange(lev, p, fire){
             break;
     }
 }
+
+//correction of 'splash' Sound
+//remove demo meteor updation
+/*
+frequency change for 'jetmotor' sound :-
+--if mouseDragged and drag is positive then increase frequency
+--if mouseDragged and drag is negative then decrease frequency
+similarly,
+--if keyIsDown(RIGHT) then increase frequency
+--if keyIsDown(LEFT ) then decrease frequency
+*/
