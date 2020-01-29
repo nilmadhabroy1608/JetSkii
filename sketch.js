@@ -270,6 +270,7 @@ function mousePressed() {
     if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && screen == 4) {
         screen = 5;
         jetmotor.pause();
+        splash.pause();
         noLoop();
     } else if (mouseX > halt.pause.x && mouseX < halt.pause.x + halt.pause.s && mouseY > halt.pause.y && mouseY < halt.pause.y + halt.pause.s && (screen == 5 || screen == 2)) {
         if(song.isLooping() || song.isPlaying()){
@@ -577,7 +578,7 @@ function displayMeteor(m, val, el, fire, ind){
     for(let i = 0; i < m.pts.length; i++)
         vertex(m.pts[i].x, m.pts[i].y);
     endShape(CLOSE);
-    if(screen != 5)
+    if(screen != 5 && screen != 2)
         m.ang -= (m.ang)?20:-360;
     pop();
     return ind;
@@ -713,6 +714,11 @@ function showState(sc, halt, bg) {
                 background(0, bg);
                 text("...before his Health deteriorates.", width/40, height/40, width/2, height/2);
                 showHealthBar(100, 0);
+                break;
+            case 133:
+                background(0, bg);
+                textSize(height/6);
+                text("Lets Go", width/2, height/2);
                 break;
             default:
                 bg = 0;
@@ -864,6 +870,7 @@ function showHealthBar(hl, tA) {
     text("HEALTH", h + w / 2, h + height / 100);
     if(hl <= 0.5 && screen != 6) {
         screen = 6;
+        jetmotor.stop();
         if (pixelDensity() > 1)
             prop.numMeteors = 1;
         tA = 0;
@@ -915,6 +922,7 @@ function levelChange(lev, p, fire){
 
 //correction of 'splash' Sound
 //remove demo meteor updation
+//adding cache functionality
 /*
 frequency change for 'jetmotor' sound :-
 --if mouseDragged and drag is positive then increase frequency
