@@ -5,3 +5,20 @@ html, body {
 canvas {
   display: block;
 }
+/*https://w3bits.com/prevent-chrome-pull-to-refresh-css*/
+body, .wrapper {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow-y: hidden;
+}
+
+body {
+  z-index: 1;
+}
+
+.wrapper {
+  z-index: 2;
+}
