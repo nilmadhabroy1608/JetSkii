@@ -6,9 +6,12 @@ canvas {
   display: block;
 }
 body{
-  width: max-content !important;
-  margin: 0 auto !important;
-  position: relative !important;
+  width: max-content;
+  margin: 0 auto;
+  position: relative;
+  top: 0px;
+  height: 100%;
+  overflow-y: hidden;
 }
 /*https://w3bits.com/prevent-chrome-pull-to-refresh-css*/
 body, .wrapper {
