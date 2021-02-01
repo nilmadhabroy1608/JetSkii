@@ -14,7 +14,7 @@ body{
   overflow-y: hidden;
 }
 /*https://w3bits.com/prevent-chrome-pull-to-refresh-css*/
-body, .wrapper {
+.wrapper {
   position: absolute;
   top: 0px;
   width: 100%;
