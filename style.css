@@ -8,6 +8,7 @@ canvas {
 body{
   width: max-content !important;
   margin: 0 auto !important;
+  position: relative !important;
 }
 /*https://w3bits.com/prevent-chrome-pull-to-refresh-css*/
 body, .wrapper {
