@@ -810,7 +810,7 @@ function showState(sc, halt, bg) {
             text("Created By\n\nJavascript\nLibrary\nMusic\n\nLogo Font\nSpecial\nthanks to\n\n",width/8, height*2/3);
             fill(184, 62, 98);
             textAlign(RIGHT);
-            text("Mohammed\nAzhar Ahmed\np5js.org\n\n'Life is Music' by\nRudy Mancuso\nSonsie One\nDaniel\nShiffman from\nthecodingtrain.com\n",width*7/8, height*2/3);
+            text("Mohammed\nAzhar Ahmed Nilmadhab Roy\np5js.org\n\n'Life is Music' by\nRudy Mancuso\nSonsie One\nDaniel\nShiffman from\nthecodingtrain.com\n",width*7/8, height*2/3);
             pop();
         } else
             bg = lerp(bg, 150, 0.05);
